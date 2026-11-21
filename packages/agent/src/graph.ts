@@ -195,6 +195,7 @@ export function getAgentGraph(
   return memoizedAgentGraph;
 }
 
+export const getRealGraph = getAgentGraph;
 export const getGraph = getAgentGraph;
 export const obterGrafo = getAgentGraph;
 export const criarGrafoReal = createRealAgentGraph;

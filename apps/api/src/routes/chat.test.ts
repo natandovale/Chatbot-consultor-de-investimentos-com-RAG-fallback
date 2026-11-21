@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { problemDetailsSchema } from '@hero/contracts';
 import { build } from '../app.js';
 import type { GraphLike } from './chat.js';
 
 describe('POST /api/chat', () => {
-  it('delega ZodError ao error handler central e retorna 400 (RFC 7807) se question estiver ausente ou vazio', async () => {
-    const app = build();
+  it('delega ZodError ao error handler central e retorna 400 (RFC 7807) sem chamar getChatGraph se question estiver ausente ou vazio', async () => {
+    const getChatGraph = vi.fn();
+    const app = build({ getChatGraph });
 
     const semCorpo = await app.inject({
       method: 'POST',
@@ -28,9 +29,11 @@ describe('POST /api/chat', () => {
     const problemVazio = problemDetailsSchema.parse(vazio.json());
     expect(problemVazio.status).toBe(400);
     expect(problemVazio.detail).toContain('Pergunta é obrigatória');
+
+    expect(getChatGraph).not.toHaveBeenCalled();
   });
 
-  it('delega erro ao error handler central (500 RFC 7807 sem vazar detalhe interno) se o grafo não estiver configurado', async () => {
+  it('delega erro ao error handler central (500 RFC 7807 sem vazar detalhe interno) se getChatGraph não estiver configurado', async () => {
     const app = build();
 
     const response = await app.inject({
@@ -46,14 +49,16 @@ describe('POST /api/chat', () => {
     expect(problem.title).toBe('Internal Server Error');
   });
 
-  it('escreve headers manuais com Cache-Control: no-cache, no-transform e Connection: keep-alive', async () => {
+  it('resolve getChatGraph sob demanda com await getGraph() dentro do handler e escreve headers SSE manuais', async () => {
     const fakeGraph: GraphLike = {
       async *stream() {
         yield { answer: { answer: 'ok' } };
       },
     };
+    const getChatGraph = vi.fn().mockResolvedValue(fakeGraph);
 
-    const app = build({ graph: fakeGraph });
+    const app = build({ getChatGraph });
+    expect(getChatGraph).not.toHaveBeenCalled();
 
     const response = await app.inject({
       method: 'POST',
@@ -61,6 +66,7 @@ describe('POST /api/chat', () => {
       payload: { question: 'Qual foi o lucro da Vale?' },
     });
 
+    expect(getChatGraph).toHaveBeenCalledTimes(1);
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toContain('text/event-stream');
     expect(response.headers['cache-control']).toBe('no-cache, no-transform');
@@ -110,7 +116,7 @@ describe('POST /api/chat', () => {
       },
     };
 
-    const app = build({ graph: fakeGraph });
+    const app = build({ getChatGraph: () => fakeGraph });
 
     const response = await app.inject({
       method: 'POST',
@@ -159,7 +165,7 @@ describe('POST /api/chat', () => {
       },
     };
 
-    const app = build({ graph: fakeGraphWithCrash });
+    const app = build({ getChatGraph: () => fakeGraphWithCrash });
 
     const response = await app.inject({
       method: 'POST',

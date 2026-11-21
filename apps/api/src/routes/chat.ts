@@ -16,19 +16,23 @@ export interface GraphLike {
   ): AsyncIterable<Record<string, any>> | Promise<AsyncIterable<Record<string, any>>>;
 }
 
+export type GetGraph = () => GraphLike | Promise<GraphLike>;
+
 export interface ChatRouteOptions {
-  graph?: GraphLike;
+  getGraph?: GetGraph;
 }
 
-const chatRoute: FastifyPluginAsync<ChatRouteOptions> = async (app, { graph }) => {
+const chatRoute: FastifyPluginAsync<ChatRouteOptions> = async (app, { getGraph }) => {
   app.post('/chat', async (request, reply) => {
     // 1. Valida o payload da requisição com o schema de @hero/contracts.
     // Erros de validação (ZodError) não são capturados aqui e sobem para o errorHandler central.
     const { question } = chatRequestSchema.parse(request.body ?? {});
 
-    if (!graph) {
+    if (!getGraph) {
       throw new Error('Grafo do agente não está configurado na aplicação.');
     }
+
+    const graph = await getGraph();
 
     // 2. Configura os headers manualmente exigidos pelo Cloud Run para evitar bufferização de SSE
     reply.hijack();
