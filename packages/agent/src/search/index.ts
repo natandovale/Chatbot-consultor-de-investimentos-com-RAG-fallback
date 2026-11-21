@@ -1,22 +1,32 @@
 import { makeSerperProvider } from './serper.js';
 import { makeGoogleCustomSearchProvider } from './google.js';
+import { makeDemoSearchProvider, demoFetchHtml } from './demo.js';
+import { defaultFetchHtml } from '../nodes/web-search.js';
 import type { SearchProvider } from './types.js';
 
 export * from './types.js';
 export * from './serper.js';
 export * from './google.js';
+export * from './demo.js';
 
 /**
- * Fábrica para instanciar o SearchProvider configurado por variável de ambiente.
+ * Fábrica para instanciar o SearchProvider.
  *
- * Lê `SEARCH_PROVIDER` (default: 'serper'):
+ * Se `env.DEMO === 'true'`, retorna o provedor demo baseado em fixtures,
+ * sem depender do Serper ou do Google Custom Search estarem no ar.
+ *
+ * Caso contrário, lê `SEARCH_PROVIDER` (default: 'serper'):
  * - 'serper': valida `SERPER_API_KEY`
- * - 'google' | 'custom_search' | 'google_custom_search': valida `GOOGLE_SEARCH_API_KEY` (ou `GOOGLE_API_KEY`) e `GOOGLE_SEARCH_CX` (ou `GOOGLE_CX`)
+ * - 'google' | 'custom_search' | 'google_custom_search': valida `GOOGLE_SEARCH_API_KEY` e `GOOGLE_SEARCH_CX`
  *
  * @param env Dicionário de variáveis de ambiente (default: process.env)
  * @throws Error se as variáveis necessárias estiverem ausentes ou se o provedor for desconhecido
  */
 export function criarSearchProvider(env: Record<string, string | undefined> = process.env): SearchProvider {
+  if (env.DEMO === 'true') {
+    return makeDemoSearchProvider();
+  }
+
   const provider = (env.SEARCH_PROVIDER || 'serper').toLowerCase().trim();
 
   switch (provider) {
@@ -54,4 +64,18 @@ export function criarSearchProvider(env: Record<string, string | undefined> = pr
         `Provedor de busca desconhecido: "${env.SEARCH_PROVIDER}". Provedores suportados: "serper", "google".`,
       );
   }
+}
+
+/**
+ * Fábrica para a função de fetch de página HTML.
+ * Se `env.DEMO === 'true'`, retorna o fetcher fake baseado nas fixtures.
+ * Caso contrário, retorna o fetcher real `defaultFetchHtml`.
+ */
+export function criarFetchHtml(
+  env: Record<string, string | undefined> = process.env,
+): (url: string) => Promise<string> {
+  if (env.DEMO === 'true') {
+    return demoFetchHtml;
+  }
+  return defaultFetchHtml;
 }
