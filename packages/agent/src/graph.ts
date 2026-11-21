@@ -10,9 +10,17 @@ import {
   type AnswerGenerateFn,
   type AnswerLlmClient,
 } from './nodes/answer.js';
-import type { EmbeddingClient } from './seed/embeddings.js';
-import type { DocumentoSimilar, SearchSimilarFn } from './db/retrieve-similar.js';
+import { createRealEmbeddingClient, type EmbeddingClient } from './seed/embeddings.js';
+import { createDb } from './db/index.js';
+import {
+  createSearchSimilar,
+  type DocumentoSimilar,
+  type SearchSimilarFn,
+} from './db/retrieve-similar.js';
+import { salvarDocumentosWeb } from './db/web-documents.js';
+import { criarFetchHtml, criarSearchProvider } from './search/index.js';
 import type { SearchProvider } from './search/types.js';
+import { createVertexLlmClient } from './llm/vertex.js';
 
 export const MAX_ITERATIONS = 2;
 
@@ -141,4 +149,59 @@ export function createAgentGraph(deps: GraphDeps) {
   }
 
   return workflow.compile();
+}
+
+export type CompiledAgentGraph = ReturnType<typeof createAgentGraph>;
+export type GetGraph<TGraph = CompiledAgentGraph> = () => TGraph | Promise<TGraph>;
+
+let memoizedAgentGraph: CompiledAgentGraph | null = null;
+
+/**
+ * Constrói uma nova instância do grafo real conectando Postgres (Drizzle + pgvector),
+ * SearchProvider (Serper/Google ou Demo) e Vertex AI (embeddings, grade e answer).
+ */
+export function createRealAgentGraph(): CompiledAgentGraph {
+  const { db } = createDb();
+  const embeddingClient = createRealEmbeddingClient();
+  const searchSimilar = createSearchSimilar(db);
+  const insertWebDocuments: InsertWebDocumentsFn = async (docs) => {
+    await salvarDocumentosWeb(db, docs);
+  };
+  const searchProvider = criarSearchProvider();
+  const fetchHtml = criarFetchHtml();
+  const vertexLlm = createVertexLlmClient();
+
+  return createAgentGraph({
+    embeddingClient,
+    searchSimilar,
+    searchProvider,
+    llmClient: vertexLlm,
+    answerLlmClient: vertexLlm,
+    insertWebDocuments,
+    fetchHtml,
+  });
+}
+
+/**
+ * Retorna o grafo real memoizado por processo.
+ * Constrói o grafo apenas na primeira chamada, nunca na inicialização do processo.
+ */
+export function getAgentGraph(
+  factory: () => CompiledAgentGraph = createRealAgentGraph,
+): CompiledAgentGraph {
+  if (!memoizedAgentGraph) {
+    memoizedAgentGraph = factory();
+  }
+  return memoizedAgentGraph;
+}
+
+export const getGraph = getAgentGraph;
+export const obterGrafo = getAgentGraph;
+export const criarGrafoReal = createRealAgentGraph;
+
+/**
+ * Limpa a instância memoizada do grafo (útil para testes unitários).
+ */
+export function resetAgentGraph(): void {
+  memoizedAgentGraph = null;
 }

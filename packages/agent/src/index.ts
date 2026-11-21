@@ -1,11 +1,14 @@
 export * from './search/index.js';
 export * from './graph.js';
+export * from './llm/vertex.js';
+export * from './seed/embeddings.js';
 export {
   createRetrieveNode,
   type RetrieveNodeDependencies,
 } from './nodes/retrieve.js';
 export {
   createGradeNode,
+  gradeOutputSchema,
   type GradeLlmClient,
   type GradeClassifierFn,
   type GradeOutput,
@@ -21,6 +24,7 @@ export {
 } from './nodes/web-search.js';
 export * from './nodes/answer.js';
 export * from './answer/format-resposta.js';
+export * from './db/index.js';
 export * from './db/retrieve-similar.js';
 export * from './db/web-documents.js';
 export * from './db/schema.js';

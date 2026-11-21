@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createAgentGraph, MAX_ITERATIONS } from './graph.js';
+import {
+  createAgentGraph,
+  getAgentGraph,
+  MAX_ITERATIONS,
+  resetAgentGraph,
+} from './graph.js';
 import type { DocumentoSimilar } from './db/retrieve-similar.js';
 import type { EmbeddingClient } from './seed/embeddings.js';
 import type { SearchProvider } from './search/types.js';
@@ -184,5 +189,31 @@ describe('createAgentGraph', () => {
     expect(finalState.answer).toContain('Aviso: O contexto pode estar incompleto');
     expect(finalState.answer).toContain('Fontes:');
     expect(finalState.answer).toContain('https://cvm.gov.br');
+  });
+
+  it('memoiza a construção do grafo por processo em getAgentGraph, construindo só na primeira chamada', () => {
+    resetAgentGraph();
+    const baseDeps = createBaseDeps();
+    const llmClient = vi.fn().mockResolvedValue({
+      sufficient: true,
+      missingAspects: [],
+    });
+
+    const factory = vi.fn(() =>
+      createAgentGraph({
+        ...baseDeps,
+        llmClient,
+      }),
+    );
+
+    // Antes da primeira chamada, a factory nunca foi invocada
+    expect(factory).not.toHaveBeenCalled();
+
+    const g1 = getAgentGraph(factory);
+    const g2 = getAgentGraph(factory);
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(g1).toBe(g2);
+    resetAgentGraph();
   });
 });

@@ -1,0 +1,24 @@
+{
+  "name": "@hero/mcp-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node dist/stdio.js",
+    "stdio": "tsx src/stdio.ts"
+  },
+  "dependencies": {
+    "@hero/agent": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
