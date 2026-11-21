@@ -23,3 +23,5 @@ export function createDb(connectionString = process.env.DATABASE_URL) {
 }
 
 export * from './schema.js';
+export * from './retrieve-similar.js';
+export * from './web-documents.js';

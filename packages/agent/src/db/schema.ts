@@ -62,5 +62,6 @@ export const documentosWeb = pgTable(
     },
     (table) => [
         index('documentos_web_embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops')),
+        index('documentos_web_expires_at_idx').on(table.expiresAt),
     ],
 );

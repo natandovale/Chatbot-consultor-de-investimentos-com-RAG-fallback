@@ -1,0 +1,1 @@
+CREATE INDEX "documentos_web_expires_at_idx" ON "documentos_web" USING btree ("expires_at");
