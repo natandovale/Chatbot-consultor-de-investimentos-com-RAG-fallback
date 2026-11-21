@@ -30,8 +30,7 @@ function parseCitationLine(rawLine: string): Citation | null {
     return null;
   }
 
-  const match =
-    LABEL_URL_SEPARATOR_REGEX.exec(cleaned) ?? LABEL_URL_FALLBACK_REGEX.exec(cleaned);
+  const match = LABEL_URL_SEPARATOR_REGEX.exec(cleaned) ?? LABEL_URL_FALLBACK_REGEX.exec(cleaned);
   if (!match) {
     return null;
   }

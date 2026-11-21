@@ -1,9 +1,11 @@
 :root {
   /* Superfícies (Dark Mode) */
   --bg-page: #111827;
-  --bg-page-glow: radial-gradient(circle at 8% 0%,
-      rgba(147, 51, 234, 0.16),
-      rgba(17, 24, 39, 0) 45%);
+  --bg-page-glow: radial-gradient(
+    circle at 8% 0%,
+    rgba(147, 51, 234, 0.16),
+    rgba(17, 24, 39, 0) 45%
+  );
   --bg-surface: #151e2f;
   --bg-elevated: #1f2937;
   --bg-step-active: #1c1530;

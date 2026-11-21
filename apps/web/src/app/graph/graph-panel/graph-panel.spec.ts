@@ -32,7 +32,9 @@ describe('GraphPanelComponent', () => {
     expect(step1.classList.contains('graph-panel__step--completed')).toBe(true);
     expect(step1.querySelector('.graph-panel__check')).toBeTruthy();
     expect(step1.querySelector('.graph-panel__label')?.textContent).toContain('Retrieve');
-    expect(step1.querySelector('.graph-panel__description')?.textContent).toContain('Busca vetorial');
+    expect(step1.querySelector('.graph-panel__description')?.textContent).toContain(
+      'Busca vetorial',
+    );
     expect(step1.querySelector('.graph-panel__duration')?.textContent).toBe('250ms');
 
     // Etapa 2: Grade (em execução com spinner girando)
@@ -40,7 +42,9 @@ describe('GraphPanelComponent', () => {
     expect(step2.classList.contains('graph-panel__step--running')).toBe(true);
     expect(step2.querySelector('.graph-panel__spinner')).toBeTruthy();
     expect(step2.querySelector('.graph-panel__label')?.textContent).toContain('Grade');
-    expect(step2.querySelector('.graph-panel__status--running')?.textContent).toContain('Em execução');
+    expect(step2.querySelector('.graph-panel__status--running')?.textContent).toContain(
+      'Em execução',
+    );
 
     // Sem webSearch ainda, o banner de fallback não aparece
     expect(compiled.querySelector('.graph-panel__banner')).toBeNull();

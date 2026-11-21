@@ -96,7 +96,9 @@ describe('parseCsvCvm', () => {
     } finally {
       try {
         unlinkSync(tempFilePath);
-      } catch {}
+      } catch {
+        // Ignora se arquivo já foi removido
+      }
     }
   });
 });

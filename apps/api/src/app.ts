@@ -10,11 +10,7 @@ export interface BuildOptions {
   getMcpGraph?: unknown;
 }
 
-export function build({
-  checkDatabase = defaultCheckDatabase,
-  getChatGraph,
-  getMcpGraph: _getMcpGraph,
-}: BuildOptions = {}) {
+export function build({ checkDatabase = defaultCheckDatabase, getChatGraph }: BuildOptions = {}) {
   const app = Fastify({ logger: true });
 
   app.setErrorHandler(errorHandler);

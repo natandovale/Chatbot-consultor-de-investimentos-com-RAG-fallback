@@ -45,9 +45,11 @@ describe('answer node', () => {
   };
 
   it('deve gerar resposta normal com citação anexada e deduplicada por sourceUrl', async () => {
-    const fakeLlmClient = vi.fn().mockResolvedValue(
-      'No 3T25, a Vale registrou um lucro líquido de R$ 14,2 bilhões, impulsionada pelo minério de ferro.',
-    );
+    const fakeLlmClient = vi
+      .fn()
+      .mockResolvedValue(
+        'No 3T25, a Vale registrou um lucro líquido de R$ 14,2 bilhões, impulsionada pelo minério de ferro.',
+      );
 
     const answerNode = createAnswerNode(fakeLlmClient);
 
@@ -66,10 +68,14 @@ describe('answer node', () => {
     expect(result.answer).toContain('Fontes:');
 
     // CVM doc: ticker + período + data-base
-    expect(result.answer).toContain('VALE3 3T25 (data-base: 2025-09-30) - https://cvm.gov.br/doc/vale3-3t25');
+    expect(result.answer).toContain(
+      'VALE3 3T25 (data-base: 2025-09-30) - https://cvm.gov.br/doc/vale3-3t25',
+    );
 
     // Web doc: título
-    expect(result.answer).toContain('Minério de ferro sobe 3% na China - https://noticias.com/minerio-alta');
+    expect(result.answer).toContain(
+      'Minério de ferro sobe 3% na China - https://noticias.com/minerio-alta',
+    );
 
     // Deduplicação: a URL da CVM aparece apenas uma vez no bloco de fontes
     const matchesCvmUrl = result.answer.match(/https:\/\/cvm\.gov\.br\/doc\/vale3-3t25/g);
@@ -77,9 +83,11 @@ describe('answer node', () => {
   });
 
   it('deve filtrar a resposta quando o LLM tenta recomendar, substituindo por guardrail e mantendo as citações', async () => {
-    const fakeLlmRecomendador = vi.fn().mockResolvedValue(
-      'Com base nos excelentes números, recomendo comprar VALE3 agora pois vale a pena comprar.',
-    );
+    const fakeLlmRecomendador = vi
+      .fn()
+      .mockResolvedValue(
+        'Com base nos excelentes números, recomendo comprar VALE3 agora pois vale a pena comprar.',
+      );
 
     const answerNode = createAnswerNode(fakeLlmRecomendador);
 
@@ -98,14 +106,20 @@ describe('answer node', () => {
 
     // As citações continuam presentes normalmente
     expect(result.answer).toContain('Fontes:');
-    expect(result.answer).toContain('VALE3 3T25 (data-base: 2025-09-30) - https://cvm.gov.br/doc/vale3-3t25');
-    expect(result.answer).toContain('Minério de ferro sobe 3% na China - https://noticias.com/minerio-alta');
+    expect(result.answer).toContain(
+      'VALE3 3T25 (data-base: 2025-09-30) - https://cvm.gov.br/doc/vale3-3t25',
+    );
+    expect(result.answer).toContain(
+      'Minério de ferro sobe 3% na China - https://noticias.com/minerio-alta',
+    );
   });
 
   it('deve confirmar que o prompt em si já instrui expressamente o modelo a nunca recomendar', () => {
     // 1. Verifica no system prompt
     expect(ANSWER_SYSTEM_PROMPT).toMatch(/NUNCA RECOMENDAR/i);
-    expect(ANSWER_SYSTEM_PROMPT).toMatch(/PROIBIDO de fazer qualquer recomendação de investimento/i);
+    expect(ANSWER_SYSTEM_PROMPT).toMatch(
+      /PROIBIDO de fazer qualquer recomendação de investimento/i,
+    );
     expect(ANSWER_SYSTEM_PROMPT).toMatch(/(sem|nunca)\s+invent/i);
 
     // 2. Verifica no prompt formatado para a chamada
@@ -121,4 +135,3 @@ describe('answer node', () => {
     expect(formattedPrompt).toMatch(/INCOMPLETO/i);
   });
 });
-

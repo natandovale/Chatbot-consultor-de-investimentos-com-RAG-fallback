@@ -6,7 +6,7 @@ import type * as schema from './schema.js';
 export type DocumentoCorpus = typeof documentos.$inferSelect;
 export type DocumentoWeb = typeof documentosWeb.$inferSelect;
 
-export type DbClient = NodePgDatabase<typeof schema> | NodePgDatabase<any>;
+export type DbClient = NodePgDatabase<typeof schema> | NodePgDatabase<Record<string, unknown>>;
 
 /**
  * Representação unificada de um documento retornado pela busca vetorial.
@@ -87,9 +87,7 @@ export async function buscarDocumentosSimilares(
       distance: distWeb,
     })
     .from(documentosWeb)
-    .where(
-      sql`${documentosWeb.embedding} IS NOT NULL AND ${documentosWeb.expiresAt} > ${agora}`,
-    )
+    .where(sql`${documentosWeb.embedding} IS NOT NULL AND ${documentosWeb.expiresAt} > ${agora}`)
     .orderBy(asc(distWeb))
     .limit(limit);
 

@@ -32,10 +32,7 @@ export function createVertexLlmClient(options: VertexLlmOptions = {}): VertexLlm
     'ai-researcher-capstone-study';
   const location = options.location || process.env.GCP_REGION || 'us-central1';
   const modelName =
-    options.model ||
-    process.env.GEMINI_MODEL ||
-    process.env.VERTEX_MODEL ||
-    'gemini-2.0-flash';
+    options.model || process.env.GEMINI_MODEL || process.env.VERTEX_MODEL || 'gemini-2.0-flash';
 
   let vertexInstance: VertexAI | null = null;
   function getVertex(): VertexAI {
@@ -57,9 +54,8 @@ export function createVertexLlmClient(options: VertexLlmOptions = {}): VertexLlm
 
       const result = await model.generateContent(prompt);
       const text =
-        result.response.candidates?.[0]?.content?.parts
-          ?.map((part) => part.text ?? '')
-          .join('') ?? '';
+        result.response.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') ??
+        '';
 
       return text.trim();
     },
@@ -84,9 +80,8 @@ export function createVertexLlmClient(options: VertexLlmOptions = {}): VertexLlm
 
       const result = await model.generateContent(prompt);
       const rawText =
-        result.response.candidates?.[0]?.content?.parts
-          ?.map((part) => part.text ?? '')
-          .join('') ?? '{}';
+        result.response.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') ??
+        '{}';
 
       const parsed = JSON.parse(cleanJsonResponse(rawText));
       return schema.parse(parsed);

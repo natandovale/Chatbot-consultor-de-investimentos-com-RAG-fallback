@@ -177,8 +177,9 @@ describe('SearchProviders', () => {
       expect(provider).toBeDefined();
       expect(typeof provider.search).toBe('function');
       // Provedores reais são envolvidos com comResiliencia (possuem getCircuitState)
-      expect(typeof (provider as any).getCircuitState).toBe('function');
-      expect((provider as any).getCircuitState()).toBe('CLOSED');
+      const resilient = provider as unknown as { getCircuitState?: () => string };
+      expect(typeof resilient.getCircuitState).toBe('function');
+      expect(resilient.getCircuitState?.()).toBe('CLOSED');
     });
 
     it('deve lançar erro claro se a chave do Serper não for fornecida', () => {
@@ -212,7 +213,9 @@ describe('SearchProviders', () => {
         criarSearchProvider({
           SEARCH_PROVIDER: 'bing',
         }),
-      ).toThrow('Provedor de busca desconhecido: "bing". Provedores suportados: "serper", "google".');
+      ).toThrow(
+        'Provedor de busca desconhecido: "bing". Provedores suportados: "serper", "google".',
+      );
     });
   });
 });

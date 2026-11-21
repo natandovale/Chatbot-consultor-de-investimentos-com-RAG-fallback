@@ -1,23 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatService, type ChatStreamEvent } from '../api/chat.service';
-import {
-  ChatStore,
-  FIXED_ERROR_MESSAGE,
-  tokenize,
-  WORD_REVEAL_INTERVAL_MS,
-} from './chat-store';
+import { ChatStore, FIXED_ERROR_MESSAGE, tokenize, WORD_REVEAL_INTERVAL_MS } from './chat-store';
 
 describe('tokenize', () => {
   it('separa texto em palavras ignorando espaços extras', () => {
-    expect(tokenize('A Vale lucrou R$ 52 bi.')).toEqual([
-      'A',
-      'Vale',
-      'lucrou',
-      'R$',
-      '52',
-      'bi.',
-    ]);
+    expect(tokenize('A Vale lucrou R$ 52 bi.')).toEqual(['A', 'Vale', 'lucrou', 'R$', '52', 'bi.']);
     expect(tokenize('   ')).toEqual([]);
   });
 });
@@ -34,7 +22,7 @@ describe('ChatStore', () => {
 
   it('adiciona mensagem do usuário e placeholder do assistente, chama ChatService.ask e revela a resposta palavra por palavra a cada 70ms', async () => {
     const fakeChatService: Pick<ChatService, 'ask'> = {
-      async *ask(_question: string): AsyncGenerator<ChatStreamEvent, void, unknown> {
+      async *ask(): AsyncGenerator<ChatStreamEvent, void, unknown> {
         yield {
           node: 'retrieve',
           documents: [

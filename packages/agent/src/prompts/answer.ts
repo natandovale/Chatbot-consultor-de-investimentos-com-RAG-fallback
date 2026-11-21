@@ -61,4 +61,3 @@ ${question}
 
 Instruções finais: Responda à pergunta do usuário utilizando unicamente os dados do contexto acima. Não emita recomendações de investimento nem invente dados contábeis.`;
 }
-

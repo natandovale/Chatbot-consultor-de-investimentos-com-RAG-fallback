@@ -6,8 +6,7 @@ export * from './server.js';
 export * from './stdio.js';
 
 const isMain =
-  Boolean(process.argv[1]) &&
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+  Boolean(process.argv[1]) && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMain) {
   startStdioServer().catch((error) => {

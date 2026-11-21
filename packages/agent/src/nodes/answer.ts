@@ -3,10 +3,7 @@ import { formatarResposta } from '../answer/format-resposta.js';
 import type { DocumentoSimilar } from '../db/retrieve-similar.js';
 
 export interface AnswerLlmClient {
-  generate(params: {
-    system: string;
-    prompt: string;
-  }): Promise<string>;
+  generate(params: { system: string; prompt: string }): Promise<string>;
 }
 
 export type AnswerGenerateFn = (params: {
@@ -25,7 +22,7 @@ export interface AnswerState {
   question: string;
   documents?: DocumentoSimilar[];
   sufficient?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

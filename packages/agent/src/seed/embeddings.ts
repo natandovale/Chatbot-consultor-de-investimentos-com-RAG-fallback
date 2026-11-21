@@ -92,12 +92,12 @@ export function createRealEmbeddingClient(options: VertexEmbeddingOptions = {}):
 /**
  * Cria o cliente de embeddings fake para modo DEMO / testes sem rede.
  */
-export function createFakeEmbeddingClient(dimensions: number = EMBEDDING_DIMENSIONS): EmbeddingClient {
+export function createFakeEmbeddingClient(
+  dimensions: number = EMBEDDING_DIMENSIONS,
+): EmbeddingClient {
   return {
     async generateEmbeddings(texts: string[]): Promise<number[][]> {
-      return texts.map(() =>
-        Array.from({ length: dimensions }, () => Math.random() * 0.02 - 0.01),
-      );
+      return texts.map(() => Array.from({ length: dimensions }, () => Math.random() * 0.02 - 0.01));
     },
   };
 }

@@ -1,7 +1,9 @@
 import type { SearchProvider, SearchResult } from './types.js';
 
 export class CircuitoAbertoError extends Error {
-  constructor(message = 'Circuito aberto para o provedor de busca. Chamada rejeitada imediatamente.') {
+  constructor(
+    message = 'Circuito aberto para o provedor de busca. Chamada rejeitada imediatamente.',
+  ) {
     super(message);
     this.name = 'CircuitoAbertoError';
   }
@@ -109,7 +111,7 @@ export function comResiliencia(
       }
 
       // 2. Tentativas com retry e backoff exponencial
-      let lastError: any;
+      let lastError: unknown;
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {

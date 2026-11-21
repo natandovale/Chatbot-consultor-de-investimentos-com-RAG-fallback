@@ -5,83 +5,77 @@
   </div>
 
   @if (hasWebSearch()) {
-    <div class="graph-panel__banner" role="status" aria-live="polite">
-      <svg
-        aria-hidden="true"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="graph-panel__banner-icon"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <span>
-        O contexto local (CVM) foi insuficiente — acionando busca na web para complementar a resposta.
-      </span>
-    </div>
-  }
-
-  @if (store.steps().length === 0) {
-    <p class="graph-panel__empty">
-      Envie uma pergunta para acompanhar cada etapa do grafo (Retrieve → Grade → Web Search → Answer).
-    </p>
+  <div class="graph-panel__banner" role="status" aria-live="polite">
+    <svg
+      aria-hidden="true"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="graph-panel__banner-icon"
+    >
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <span>
+      O contexto local (CVM) foi insuficiente — acionando busca na web para complementar a resposta.
+    </span>
+  </div>
+  } @if (store.steps().length === 0) {
+  <p class="graph-panel__empty">
+    Envie uma pergunta para acompanhar cada etapa do grafo (Retrieve → Grade → Web Search → Answer).
+  </p>
   } @else {
-    <ol class="graph-panel__timeline">
-      @for (step of store.steps(); track $index) {
-        @let meta = getMeta(step);
-        <li
-          class="graph-panel__step"
-          [class.graph-panel__step--running]="step.status === 'running'"
-          [class.graph-panel__step--completed]="step.status === 'completed'"
+  <ol class="graph-panel__timeline">
+    @for (step of store.steps(); track $index) { @let meta = getMeta(step);
+    <li
+      class="graph-panel__step"
+      [class.graph-panel__step--running]="step.status === 'running'"
+      [class.graph-panel__step--completed]="step.status === 'completed'"
+    >
+      @if (step.status === 'running') {
+      <span
+        aria-hidden="true"
+        class="graph-panel__indicator graph-panel__indicator--running cs-run"
+      >
+        <span class="graph-panel__spinner"></span>
+      </span>
+      } @else {
+      <span aria-hidden="true" class="graph-panel__indicator graph-panel__indicator--completed">
+        <svg
+          class="graph-panel__check"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          @if (step.status === 'running') {
-            <span
-              aria-hidden="true"
-              class="graph-panel__indicator graph-panel__indicator--running cs-run"
-            >
-              <span class="graph-panel__spinner"></span>
-            </span>
-          } @else {
-            <span
-              aria-hidden="true"
-              class="graph-panel__indicator graph-panel__indicator--completed"
-            >
-              <svg
-                class="graph-panel__check"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#ffffff"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M5 12l5 5 9-10"></path>
-              </svg>
-            </span>
-          }
-
-          <div class="graph-panel__content">
-            <div class="graph-panel__row">
-              <span class="graph-panel__label">{{ meta.label }}</span>
-              @if (step.status === 'running') {
-                <span class="graph-panel__status graph-panel__status--running">Em execução</span>
-              } @else {
-                <span class="graph-panel__duration">{{ formatDuration(step) }}</span>
-              }
-            </div>
-            <p class="graph-panel__description">{{ meta.description }}</p>
-          </div>
-        </li>
+          <path d="M5 12l5 5 9-10"></path>
+        </svg>
+      </span>
       }
-    </ol>
+
+      <div class="graph-panel__content">
+        <div class="graph-panel__row">
+          <span class="graph-panel__label">{{ meta.label }}</span>
+          @if (step.status === 'running') {
+          <span class="graph-panel__status graph-panel__status--running">Em execução</span>
+          } @else {
+          <span class="graph-panel__duration">{{ formatDuration(step) }}</span>
+          }
+        </div>
+        <p class="graph-panel__description">{{ meta.description }}</p>
+      </div>
+    </li>
+    }
+  </ol>
   }
 </section>

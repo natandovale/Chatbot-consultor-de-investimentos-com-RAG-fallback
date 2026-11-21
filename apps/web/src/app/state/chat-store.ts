@@ -1,16 +1,5 @@
-import {
-  computed,
-  DestroyRef,
-  inject,
-  Injectable,
-  type OnDestroy,
-  signal,
-} from '@angular/core';
-import {
-  ChatService,
-  type ChatStreamEvent,
-  type ResumoDocumento,
-} from '../api/chat.service';
+import { computed, DestroyRef, inject, Injectable, type OnDestroy, signal } from '@angular/core';
+import { ChatService, type ChatStreamEvent, type ResumoDocumento } from '../api/chat.service';
 import { GraphStore, type GraphStep } from './graph-store';
 import { tokenize } from './tokenize';
 
@@ -215,10 +204,7 @@ export class ChatStore implements OnDestroy {
     }, WORD_REVEAL_INTERVAL_MS);
   }
 
-  private finishAssistantMessage(
-    assistantMsgId: string,
-    sources: ResumoDocumento[],
-  ): void {
+  private finishAssistantMessage(assistantMsgId: string, sources: ResumoDocumento[]): void {
     this._isStreaming.set(false);
     this._messages.update((current) =>
       current.map((msg) =>

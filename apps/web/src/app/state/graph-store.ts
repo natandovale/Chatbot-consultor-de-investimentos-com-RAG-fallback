@@ -40,9 +40,7 @@ export function predictNextNode(
 
     case 'grade': {
       const iterations =
-        typeof event.iterations === 'number'
-          ? event.iterations
-          : (completedGradeIterations ?? 1);
+        typeof event.iterations === 'number' ? event.iterations : (completedGradeIterations ?? 1);
       if (event.sufficient || iterations >= MAX_ITERATIONS) {
         return 'answer';
       }

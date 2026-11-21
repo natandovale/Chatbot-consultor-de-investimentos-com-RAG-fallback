@@ -58,10 +58,11 @@ export function makeGoogleCustomSearchProvider(
           snippet: item.snippet ?? '',
           url: item.link ?? '',
         }));
-      } catch (error: any) {
-        if (error?.name === 'AbortError' || controller.signal.aborted) {
+      } catch (error: unknown) {
+        if ((error instanceof Error && error.name === 'AbortError') || controller.signal.aborted) {
           throw new Error(
             `Timeout de ${timeoutMs / 1000}s excedido na busca do Google Custom Search`,
+            { cause: error },
           );
         }
         throw error;

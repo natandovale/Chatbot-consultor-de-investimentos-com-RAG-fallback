@@ -41,8 +41,7 @@ export interface SeedOptions {
 
 export async function runSeed(options: SeedOptions = {}) {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const dataDir =
-    options.dataDir || path.resolve(__dirname, '../../../corpus/data/documentos');
+  const dataDir = options.dataDir || path.resolve(__dirname, '../../../corpus/data/documentos');
 
   console.log(`[seed] Lendo documentos de: ${dataDir}`);
   const files = (await fs.readdir(dataDir)).filter((file) => file.endsWith('.json'));

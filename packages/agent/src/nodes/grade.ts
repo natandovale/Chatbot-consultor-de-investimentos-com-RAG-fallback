@@ -5,7 +5,9 @@ import type { Documento } from '../db/retrieve-similar.js';
 export const gradeOutputSchema = z.object({
   sufficient: z
     .boolean()
-    .describe('true se o contexto numérico fornecido responde plenamente à pergunta, false caso contrário'),
+    .describe(
+      'true se o contexto numérico fornecido responde plenamente à pergunta, false caso contrário',
+    ),
   missingAspects: z
     .array(z.string())
     .default([])
@@ -36,7 +38,7 @@ export interface AgentState {
   documents?: Documento[];
   sufficient?: boolean;
   missingAspects?: string[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

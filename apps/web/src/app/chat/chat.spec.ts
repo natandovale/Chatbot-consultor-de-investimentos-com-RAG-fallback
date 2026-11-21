@@ -132,7 +132,9 @@ describe('Chat', () => {
     const assistantMsg = messagesContainer?.querySelector('.chat__message--assistant');
     expect(assistantMsg?.querySelector('.chat__body')?.textContent).toBe('A Vale lucrou R$ 14 bi.');
 
-    const citationLink = assistantMsg?.querySelector('a.chat__citation') as HTMLAnchorElement | null;
+    const citationLink = assistantMsg?.querySelector(
+      'a.chat__citation',
+    ) as HTMLAnchorElement | null;
     expect(citationLink).toBeTruthy();
     expect(citationLink?.href).toContain('https://dados.cvm.gov.br/itr/vale3');
     expect(citationLink?.textContent).toContain('3T25 (data-base 2025-09-30)');

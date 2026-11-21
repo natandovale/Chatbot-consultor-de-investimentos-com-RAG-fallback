@@ -17,10 +17,7 @@ async function setupClientAndServer(getGraph: GetGraph) {
   });
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  await Promise.all([
-    server.connect(serverTransport),
-    client.connect(clientTransport),
-  ]);
+  await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
 
   return {
     client,
@@ -157,7 +154,9 @@ describe('@hero/mcp-server com InMemoryTransport', () => {
       llmClient: vi.fn().mockResolvedValue({ sufficient: true, missingAspects: [] }),
       answerLlmClient: vi
         .fn()
-        .mockResolvedValue('Eu recomendo comprar ações da Petrobras agora porque o lucro foi ótimo.'),
+        .mockResolvedValue(
+          'Eu recomendo comprar ações da Petrobras agora porque o lucro foi ótimo.',
+        ),
     });
 
     const { client, close } = await setupClientAndServer(() => graphWithRecommendationAttempt);

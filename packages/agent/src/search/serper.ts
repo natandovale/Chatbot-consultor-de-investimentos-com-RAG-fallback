@@ -51,9 +51,11 @@ export function makeSerperProvider(apiKey: string, timeoutMs: number = 10000): S
           snippet: item.snippet ?? '',
           url: item.link ?? '',
         }));
-      } catch (error: any) {
-        if (error?.name === 'AbortError' || controller.signal.aborted) {
-          throw new Error(`Timeout de ${timeoutMs / 1000}s excedido na busca do Serper`);
+      } catch (error: unknown) {
+        if ((error instanceof Error && error.name === 'AbortError') || controller.signal.aborted) {
+          throw new Error(`Timeout de ${timeoutMs / 1000}s excedido na busca do Serper`, {
+            cause: error,
+          });
         }
         throw error;
       } finally {

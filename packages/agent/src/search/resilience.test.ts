@@ -1,14 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  comResiliencia,
-  CircuitBreakerOpenError,
-  type SearchProvider,
-} from './index.js';
+import { comResiliencia, CircuitBreakerOpenError, type SearchProvider } from './index.js';
 
 describe('comResiliencia', () => {
   it('executa com sucesso de primeira sem disparar sleep nem alterar circuit breaker', async () => {
     const fakeProvider: SearchProvider = {
-      search: vi.fn().mockResolvedValue([{ title: 'Doc', url: 'https://exemplo.com', snippet: 'resumo' }]),
+      search: vi
+        .fn()
+        .mockResolvedValue([{ title: 'Doc', url: 'https://exemplo.com', snippet: 'resumo' }]),
     };
 
     const mockSleep = vi.fn();
@@ -86,7 +84,7 @@ describe('comResiliencia', () => {
 
   describe('Circuit Breaker com relógio injetável (now)', () => {
     it('abre o circuito após o limite de falhas consecutivas e rejeita chamadas subsequentes na hora', async () => {
-      let currentTime = 1000;
+      const currentTime = 1000;
       const fakeClock = () => currentTime;
       const mockSleep = vi.fn().mockResolvedValue(undefined);
 

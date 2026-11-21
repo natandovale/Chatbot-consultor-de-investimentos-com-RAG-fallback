@@ -1,15 +1,8 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import { createRetrieveNode } from './nodes/retrieve.js';
 import { createGradeNode, type GradeClassifierFn, type GradeLlmClient } from './nodes/grade.js';
-import {
-  createWebSearchNode,
-  type InsertWebDocumentsFn,
-} from './nodes/web-search.js';
-import {
-  createAnswerNode,
-  type AnswerGenerateFn,
-  type AnswerLlmClient,
-} from './nodes/answer.js';
+import { createWebSearchNode, type InsertWebDocumentsFn } from './nodes/web-search.js';
+import { createAnswerNode, type AnswerGenerateFn, type AnswerLlmClient } from './nodes/answer.js';
 import { createRealEmbeddingClient, type EmbeddingClient } from './seed/embeddings.js';
 import { createDb } from './db/index.js';
 import {
@@ -110,8 +103,7 @@ export function createAgentGraph(deps: GraphDeps) {
 
   // 4. Nó answer
   const answerNode = createAnswerNode(
-    deps.answerLlmClient ??
-      (async () => 'Resposta analítica com base nos documentos disponíveis.'),
+    deps.answerLlmClient ?? (async () => 'Resposta analítica com base nos documentos disponíveis.'),
   );
 
   // 5. Montagem do fluxo do StateGraph
@@ -140,12 +132,19 @@ export function createAgentGraph(deps: GraphDeps) {
     reducer: (_prev, update) => update ?? _prev,
     default: () => '',
   });
-  (workflow.channels as Record<string, any>)['answer'] = answerChannel;
-  const workflowAny = workflow as any;
-  if (workflowAny._schemaDefinitions && workflowAny._outputDefinition) {
-    const schemaDef = workflowAny._schemaDefinitions.get(workflowAny._outputDefinition) ?? {};
-    workflowAny._outputDefinition = { ...schemaDef, answer: answerChannel };
-    workflowAny._schemaDefinitions.set(workflowAny._outputDefinition, workflowAny._outputDefinition);
+  (workflow.channels as Record<string, unknown>)['answer'] = answerChannel;
+  const workflowInternal = workflow as unknown as {
+    _schemaDefinitions?: Map<unknown, Record<string, unknown>>;
+    _outputDefinition?: Record<string, unknown>;
+  };
+  if (workflowInternal._schemaDefinitions && workflowInternal._outputDefinition) {
+    const schemaDef =
+      workflowInternal._schemaDefinitions.get(workflowInternal._outputDefinition) ?? {};
+    workflowInternal._outputDefinition = { ...schemaDef, answer: answerChannel };
+    workflowInternal._schemaDefinitions.set(
+      workflowInternal._outputDefinition,
+      workflowInternal._outputDefinition,
+    );
   }
 
   return workflow.compile();

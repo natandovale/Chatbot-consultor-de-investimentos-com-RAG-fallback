@@ -17,14 +17,14 @@ export const GENERIC_TOOL_ERROR_MESSAGE =
   'Não foi possível processar a pergunta no momento. Tente novamente mais tarde.';
 
 export interface GraphLike {
-  invoke?(input: { question: string; [key: string]: any }): Promise<{
+  invoke?(input: { question: string; [key: string]: unknown }): Promise<{
     answer?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   }>;
   stream?(
-    input: { question: string; [key: string]: any },
-    options?: any,
-  ): AsyncIterable<Record<string, any>> | Promise<AsyncIterable<Record<string, any>>>;
+    input: { question: string; [key: string]: unknown },
+    options?: unknown,
+  ): AsyncIterable<Record<string, unknown>> | Promise<AsyncIterable<Record<string, unknown>>>;
 }
 
 export type GetGraph = () => GraphLike | Promise<GraphLike>;
@@ -47,11 +47,8 @@ async function executarGrafo(graph: GraphLike, question: string): Promise<string
     const stream = await graph.stream({ question }, { streamMode: 'updates' });
     for await (const chunk of stream) {
       if (chunk && typeof chunk === 'object' && 'answer' in chunk) {
-        const answerData = chunk.answer;
-        finalAnswer =
-          typeof answerData === 'string'
-            ? answerData
-            : (answerData?.answer ?? '');
+        const answerData = chunk.answer as string | { answer?: string } | undefined;
+        finalAnswer = typeof answerData === 'string' ? answerData : (answerData?.answer ?? '');
       }
     }
     return finalAnswer;
@@ -79,9 +76,20 @@ export function createMcpServer(
   });
 
   // Permite tanto `{ pergunta: "..." }` quanto `{ question: "..." }` na validação de argumentos
-  const origValidate = (server as any).validateToolInput?.bind(server);
+  const internalServer = server as unknown as {
+    validateToolInput?: (
+      tool: unknown,
+      args: Record<string, unknown> | undefined,
+      toolName: string,
+    ) => Promise<unknown>;
+  };
+  const origValidate = internalServer.validateToolInput?.bind(server);
   if (origValidate) {
-    (server as any).validateToolInput = async (tool: any, args: any, toolName: string) => {
+    internalServer.validateToolInput = async (
+      tool: unknown,
+      args: Record<string, unknown> | undefined,
+      toolName: string,
+    ) => {
       if (
         toolName === PERGUNTAR_TOOL_NAME &&
         args &&

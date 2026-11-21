@@ -27,7 +27,10 @@ export const DESCRICOES_LUCRO_LIQUIDO = [
   'Lucro ou Prejuízo do Período',
 ];
 
-export const DESCRICOES_PATRIMONIO_LIQUIDO = ['Patrimônio Líquido Consolidado', 'Patrimônio Líquido'];
+export const DESCRICOES_PATRIMONIO_LIQUIDO = [
+  'Patrimônio Líquido Consolidado',
+  'Patrimônio Líquido',
+];
 
 export type Mes = 3 | 6 | 9 | 12;
 

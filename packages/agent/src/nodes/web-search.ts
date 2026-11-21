@@ -27,7 +27,7 @@ export interface WebSearchNodeDependencies {
 export interface AgentState {
   question: string;
   missingAspects?: string[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -139,7 +139,7 @@ export function createWebSearchNode(deps: WebSearchNodeDependencies) {
 
     // 2. Itera sobre cada query
     for (const q of queries) {
-      let searchResults: Array<{ title: string; url: string; snippet?: string }> = [];
+      let searchResults: Array<{ title: string; url: string; snippet?: string }>;
 
       try {
         const results = await deps.searchProvider.search(q);

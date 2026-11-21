@@ -2,10 +2,7 @@ export * from './search/index.js';
 export * from './graph.js';
 export * from './llm/vertex.js';
 export * from './seed/embeddings.js';
-export {
-  createRetrieveNode,
-  type RetrieveNodeDependencies,
-} from './nodes/retrieve.js';
+export { createRetrieveNode, type RetrieveNodeDependencies } from './nodes/retrieve.js';
 export {
   createGradeNode,
   gradeOutputSchema,

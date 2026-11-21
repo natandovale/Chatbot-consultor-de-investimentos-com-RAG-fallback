@@ -1,14 +1,5 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-} from '@angular/core';
-import {
-  GraphStore,
-  type GraphNodeName,
-  type GraphStep,
-} from '../../state/graph-store';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { GraphStore, type GraphNodeName, type GraphStep } from '../../state/graph-store';
 
 export interface StepMeta {
   label: string;

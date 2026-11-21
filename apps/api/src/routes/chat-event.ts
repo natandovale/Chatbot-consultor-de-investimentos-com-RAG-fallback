@@ -34,11 +34,7 @@ export interface ErrorChatEvent {
 }
 
 export type ChatEvent =
-  | RetrieveChatEvent
-  | GradeChatEvent
-  | WebSearchChatEvent
-  | AnswerChatEvent
-  | ErrorChatEvent;
+  RetrieveChatEvent | GradeChatEvent | WebSearchChatEvent | AnswerChatEvent | ErrorChatEvent;
 
 /**
  * Traduz um chunk emitido pelo graph.stream() para um ou mais eventos tipados.
@@ -47,7 +43,7 @@ export type ChatEvent =
  * - webSearch: só o nome (sem campos de estado novo)
  * - answer: texto final da resposta
  */
-export function translateChunks(chunk: Record<string, any>): ChatEvent[] {
+export function translateChunks(chunk: Record<string, unknown>): ChatEvent[] {
   const events: ChatEvent[] = [];
 
   if (!chunk || typeof chunk !== 'object') {
@@ -55,15 +51,19 @@ export function translateChunks(chunk: Record<string, any>): ChatEvent[] {
   }
 
   if ('retrieve' in chunk) {
-    const rawDocs = chunk.retrieve?.documents;
+    const retrievePayload = chunk.retrieve as { documents?: unknown } | undefined;
+    const rawDocs = retrievePayload?.documents;
     const documents: ResumoDocumento[] = Array.isArray(rawDocs)
-      ? rawDocs.map((d: any) => ({
-          id: d.id,
-          title: d.title ?? d.companyName ?? 'Documento',
-          sourceUrl: d.sourceUrl ?? '',
-          ...(d.ticker ? { ticker: d.ticker } : {}),
-          ...(d.period ? { period: d.period } : {}),
-          ...(d.sourceType ? { sourceType: d.sourceType } : {}),
+      ? rawDocs.map((d: Record<string, unknown>) => ({
+          ...(typeof d.id === 'string' ? { id: d.id } : {}),
+          title:
+            (typeof d.title === 'string' ? d.title : undefined) ??
+            (typeof d.companyName === 'string' ? d.companyName : undefined) ??
+            'Documento',
+          sourceUrl: typeof d.sourceUrl === 'string' ? d.sourceUrl : '',
+          ...(typeof d.ticker === 'string' ? { ticker: d.ticker } : {}),
+          ...(typeof d.period === 'string' ? { period: d.period } : {}),
+          ...(typeof d.sourceType === 'string' ? { sourceType: d.sourceType } : {}),
         }))
       : [];
 
@@ -74,11 +74,14 @@ export function translateChunks(chunk: Record<string, any>): ChatEvent[] {
   }
 
   if ('grade' in chunk) {
-    const grade = chunk.grade;
+    const grade = chunk.grade as
+      { sufficient?: unknown; missingAspects?: unknown; iterations?: unknown } | undefined;
     events.push({
       node: 'grade',
       sufficient: Boolean(grade?.sufficient),
-      missingAspects: Array.isArray(grade?.missingAspects) ? grade.missingAspects : [],
+      missingAspects: Array.isArray(grade?.missingAspects)
+        ? (grade.missingAspects as string[])
+        : [],
       iterations: typeof grade?.iterations === 'number' ? grade.iterations : 1,
     });
   }
@@ -90,11 +93,8 @@ export function translateChunks(chunk: Record<string, any>): ChatEvent[] {
   }
 
   if ('answer' in chunk) {
-    const answerData = chunk.answer;
-    const answer =
-      typeof answerData === 'string'
-        ? answerData
-        : (answerData?.answer ?? '');
+    const answerData = chunk.answer as string | { answer?: string } | undefined;
+    const answer = typeof answerData === 'string' ? answerData : (answerData?.answer ?? '');
 
     events.push({
       node: 'answer',
@@ -108,7 +108,7 @@ export function translateChunks(chunk: Record<string, any>): ChatEvent[] {
 /**
  * Retorna o primeiro evento traduzido de um chunk, ou null caso o chunk não corresponda a nenhum nó conhecido.
  */
-export function translateChunkToEvent(chunk: Record<string, any>): ChatEvent | null {
+export function translateChunkToEvent(chunk: Record<string, unknown>): ChatEvent | null {
   const list = translateChunks(chunk);
   return list.length > 0 ? list[0] : null;
 }

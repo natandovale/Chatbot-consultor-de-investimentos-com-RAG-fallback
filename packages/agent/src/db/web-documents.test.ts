@@ -8,7 +8,7 @@ import type { DbClient } from './retrieve-similar.js';
 
 describe('web-documents TTL and persistence', () => {
   it('deve calcular expiresAt baseado no TTL de 7 dias por padrão', async () => {
-    let insertedRecords: any[] = [];
+    let insertedRecords: Array<{ fetchedAt: Date; expiresAt: Date }> = [];
     const mockDb = {
       insert: vi.fn().mockReturnValue({
         values: vi.fn().mockImplementation((records) => {
@@ -44,7 +44,7 @@ describe('web-documents TTL and persistence', () => {
   });
 
   it('deve respeitar um TTL customizado por chunk se fornecido', async () => {
-    let insertedRecords: any[] = [];
+    let insertedRecords: Array<{ fetchedAt: Date; expiresAt: Date }> = [];
     const mockDb = {
       insert: vi.fn().mockReturnValue({
         values: vi.fn().mockImplementation((records) => {
@@ -70,7 +70,8 @@ describe('web-documents TTL and persistence', () => {
     await salvarDocumentosWeb(mockDb, chunks);
 
     const record = insertedRecords[0];
-    const diffDias = (record.expiresAt.getTime() - record.fetchedAt.getTime()) / (1000 * 60 * 60 * 24);
+    const diffDias =
+      (record.expiresAt.getTime() - record.fetchedAt.getTime()) / (1000 * 60 * 60 * 24);
     expect(diffDias).toBe(3);
   });
 

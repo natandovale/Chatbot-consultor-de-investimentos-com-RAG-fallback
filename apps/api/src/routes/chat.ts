@@ -1,19 +1,15 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { chatRequestSchema } from '@hero/contracts';
-import {
-  type ErrorChatEvent,
-  formatSseEvent,
-  translateChunks,
-} from './chat-event.js';
+import { type ErrorChatEvent, formatSseEvent, translateChunks } from './chat-event.js';
 
 /**
  * Interface mínima do grafo para permitir testes com fakes sem depender do LangGraph concreto.
  */
 export interface GraphLike {
   stream(
-    input: { question: string; [key: string]: any },
-    options?: any,
-  ): AsyncIterable<Record<string, any>> | Promise<AsyncIterable<Record<string, any>>>;
+    input: { question: string; [key: string]: unknown },
+    options?: unknown,
+  ): AsyncIterable<Record<string, unknown>> | Promise<AsyncIterable<Record<string, unknown>>>;
 }
 
 export type GetGraph = () => GraphLike | Promise<GraphLike>;
@@ -50,12 +46,14 @@ const chatRoute: FastifyPluginAsync<ChatRouteOptions> = async (app, { getGraph }
           reply.raw.write(formatSseEvent(event));
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 4. Se o grafo lançar erro no meio do stream (após headers 200 SSE enviados),
       // escreve um evento SSE de erro e encerra a conexão sem derrubar o processo
+      const message =
+        error instanceof Error ? error.message : 'Erro inesperado durante a execução do grafo';
       const errorEvent: ErrorChatEvent = {
         node: 'error',
-        error: error?.message || 'Erro inesperado durante a execução do grafo',
+        error: message || 'Erro inesperado durante a execução do grafo',
       };
       reply.raw.write(formatSseEvent(errorEvent));
     } finally {

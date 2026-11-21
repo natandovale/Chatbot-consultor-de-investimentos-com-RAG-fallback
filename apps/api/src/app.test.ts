@@ -63,7 +63,9 @@ describe('Central Error Handler (RFC 7807 - application/problem+json)', () => {
   it('mapeia qualquer outro erro para 500 genérico sem vazar mensagem interna nem stack trace', async () => {
     const app = build({
       checkDatabase: async () => {
-        throw new Error('FATAL: password authentication failed for user "postgres_secret" at 10.0.0.12:5432');
+        throw new Error(
+          'FATAL: password authentication failed for user "postgres_secret" at 10.0.0.12:5432',
+        );
       },
     });
 

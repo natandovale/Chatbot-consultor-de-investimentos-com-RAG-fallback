@@ -32,7 +32,10 @@ export class ChatService {
    * e produz um `AsyncGenerator` dos eventos do grafo (`retrieve`, `grade`, `webSearch`, `answer`).
    * Caso um frame de evento `error` seja recebido, lança uma exceção com a mensagem do erro.
    */
-  async *ask(question: string, options?: AskOptions): AsyncGenerator<ChatStreamEvent, void, unknown> {
+  async *ask(
+    question: string,
+    options?: AskOptions,
+  ): AsyncGenerator<ChatStreamEvent, void, unknown> {
     const requestInit: RequestInit = {
       method: 'POST',
       headers: {
@@ -48,7 +51,11 @@ export class ChatService {
     if (!response.ok) {
       let errorDetail = `Erro HTTP ${response.status}`;
       try {
-        const errorBody = (await response.json()) as { detail?: string; message?: string; error?: string };
+        const errorBody = (await response.json()) as {
+          detail?: string;
+          message?: string;
+          error?: string;
+        };
         errorDetail = errorBody.detail ?? errorBody.message ?? errorBody.error ?? errorDetail;
       } catch {
         // Ignora erro de parse caso a resposta não seja JSON

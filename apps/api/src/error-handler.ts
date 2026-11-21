@@ -40,17 +40,12 @@ function isCircuitoAbertoError(error: unknown): error is CircuitoAbertoError {
  * - CircuitoAbertoError -> 503 Service Unavailable
  * - Qualquer outro erro -> 500 Internal Server Error genérico (sem vazar detalhes internos ou stack trace)
  */
-export function errorHandler(
-  error: unknown,
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+export function errorHandler(error: unknown, request: FastifyRequest, reply: FastifyReply) {
   request.log.error(error);
 
   if (isZodError(error)) {
     const detail =
-      error.issues.map((issue) => issue.message).join('; ') ||
-      'Dados inválidos na requisição.';
+      error.issues.map((issue) => issue.message).join('; ') || 'Dados inválidos na requisição.';
 
     const problem: ProblemDetails = problemDetailsSchema.parse({
       type: 'about:blank',
@@ -67,9 +62,7 @@ export function errorHandler(
       type: 'about:blank',
       title: 'Service Unavailable',
       status: 503,
-      detail:
-        error.message ||
-        'Serviço de busca temporariamente indisponível (circuito aberto).',
+      detail: error.message || 'Serviço de busca temporariamente indisponível (circuito aberto).',
     });
 
     return reply.status(503).type(PROBLEM_JSON_CONTENT_TYPE).send(problem);

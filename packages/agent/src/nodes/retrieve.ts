@@ -10,7 +10,7 @@ export interface RetrieveNodeDependencies {
 export interface AgentState {
   question: string;
   documents?: Documento[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

@@ -24,7 +24,9 @@ describe('web-search node', () => {
         </html>
       `;
       const text = extractReadableText(html);
-      expect(text).toBe('Notícia Financeira A mineradora teve alta de 12% no minério & lucro recorde.');
+      expect(text).toBe(
+        'Notícia Financeira A mineradora teve alta de 12% no minério & lucro recorde.',
+      );
     });
   });
 
@@ -164,20 +166,18 @@ describe('web-search node', () => {
     });
 
     it('deve capturar erro em searchProvider.search por query e continuar sem derrubar o nó (Serper fora do ar ou circuit breaker aberto)', async () => {
-      let chamadaSearch = 0;
       const searchMock = vi.fn().mockImplementation(async (q: string) => {
-        chamadaSearch++;
         if (q.includes('falha')) {
           throw new Error('CircuitBreakerOpenError: Serper indisponível (circuito aberto)');
         }
-        return [
-          { title: 'Notícia Recuperada', url: 'https://noticia-boa.com', snippet: 'resumo' },
-        ];
+        return [{ title: 'Notícia Recuperada', url: 'https://noticia-boa.com', snippet: 'resumo' }];
       });
 
       const searchProvider: SearchProvider = { search: searchMock };
 
-      const fetchHtmlMock = vi.fn().mockResolvedValue('<p>Conteúdo relevante da busca que funcionou</p>');
+      const fetchHtmlMock = vi
+        .fn()
+        .mockResolvedValue('<p>Conteúdo relevante da busca que funcionou</p>');
       const insertedDocs: WebDocumentToInsert[] = [];
 
       const webSearch = createWebSearchNode({

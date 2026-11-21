@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createAgentGraph,
-  getAgentGraph,
-  MAX_ITERATIONS,
-  resetAgentGraph,
-} from './graph.js';
+import { createAgentGraph, getAgentGraph, MAX_ITERATIONS, resetAgentGraph } from './graph.js';
 import type { DocumentoSimilar } from './db/retrieve-similar.js';
 import type { EmbeddingClient } from './seed/embeddings.js';
 import type { SearchProvider } from './search/types.js';
@@ -29,9 +24,11 @@ describe('createAgentGraph', () => {
     const fakeSearchSimilar = vi.fn().mockResolvedValue([fakeDoc]);
 
     const fakeSearchProvider: SearchProvider = {
-      search: vi.fn().mockResolvedValue([
-        { title: 'Notícia Web', url: 'https://noticia.com', snippet: 'resumo' },
-      ]),
+      search: vi
+        .fn()
+        .mockResolvedValue([
+          { title: 'Notícia Web', url: 'https://noticia.com', snippet: 'resumo' },
+        ]),
     };
 
     const fakeInsertWebDocs = vi.fn().mockResolvedValue(undefined);
@@ -153,10 +150,12 @@ describe('createAgentGraph', () => {
     });
 
     // 3. AnswerLlmClient que gera uma resposta real alertando sobre dados incompletos
-    const answerLlmClient = vi.fn().mockResolvedValue(
-      'Aviso: O contexto pode estar incompleto pois a busca na web não pôde ser realizada. ' +
-        'Entretanto, segundo as demonstrações financeiras da Vale arquivadas na CVM, a companhia registrou lucro no 3T25.',
-    );
+    const answerLlmClient = vi
+      .fn()
+      .mockResolvedValue(
+        'Aviso: O contexto pode estar incompleto pois a busca na web não pôde ser realizada. ' +
+          'Entretanto, segundo as demonstrações financeiras da Vale arquivadas na CVM, a companhia registrou lucro no 3T25.',
+      );
 
     const app = createAgentGraph({
       ...baseDeps,

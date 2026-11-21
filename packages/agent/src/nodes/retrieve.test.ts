@@ -28,7 +28,9 @@ describe('createRetrieveNode', () => {
     });
 
     // Valida que o cliente de embeddings foi chamado com a pergunta
-    expect(generateEmbeddingsMock).toHaveBeenCalledWith(['Qual foi o lucro líquido da Vale no 3T25?']);
+    expect(generateEmbeddingsMock).toHaveBeenCalledWith([
+      'Qual foi o lucro líquido da Vale no 3T25?',
+    ]);
 
     // Valida que a busca foi chamada com o vetor e o top-k default de 5
     expect(searchSimilarMock).toHaveBeenCalledWith(fakeEmbedding, 5);

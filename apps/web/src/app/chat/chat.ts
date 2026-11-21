@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ChatStore, type ChatMessage } from '../state/chat-store';
 import { parseAnswer, type ParsedAnswer } from '../state/citation';
 import { GraphPanelComponent } from '../graph/graph-panel/graph-panel';

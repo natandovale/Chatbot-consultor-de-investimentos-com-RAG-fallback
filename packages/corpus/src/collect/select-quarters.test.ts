@@ -12,7 +12,6 @@ import {
   periodEndIso,
   periodoLabel,
   subtrairValorConta,
-  valorConta,
   type DemonstrativosAno,
 } from './select-quarters.js';
 import type { LinhaCvm, ValorConta } from '../types.js';

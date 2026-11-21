@@ -7,3 +7,5 @@ pnpm-lock.yaml
 
 # Prosa: markdown didático e documentação, não é escopo do Prettier
 **/*.md
+sample_ui
+
