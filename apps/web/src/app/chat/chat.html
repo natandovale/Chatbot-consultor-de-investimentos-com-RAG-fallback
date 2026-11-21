@@ -1,5 +1,5 @@
-<div class="chat-shell">
-  <header class="chat-header">
+<div class="chat-shell chat">
+  <header class="chat-header chat__header">
     <div class="brand-group">
       <svg
         aria-hidden="true"
@@ -22,7 +22,7 @@
     <span class="header-session-label">Nova conversa</span>
   </header>
 
-  <div class="disclaimer-banner" role="note" aria-label="Aviso regulatório">
+  <div class="disclaimer-banner chat__disclaimer" role="note" aria-label="Aviso regulatório">
     <svg
       aria-hidden="true"
       width="16"
@@ -47,29 +47,107 @@
 
   <div class="workspace-grid">
     <main class="chat-card" aria-label="Conversa com o consultor">
-      <section class="messages-area" aria-label="Área de mensagens">
-        <div class="messages-empty">
-          <p class="empty-title">Nenhuma mensagem ainda</p>
-          <p class="empty-subtitle">
-            Envie uma pergunta abaixo para consultar indicadores financeiros das 20 empresas da B3 cobertas pelo corpus da CVM.
-          </p>
-        </div>
+      <section class="chat__messages messages-area" aria-label="Área de mensagens">
+        @if (store.messages().length === 0) {
+          <div class="chat__empty messages-empty">
+            <p class="empty-title">Nenhuma mensagem ainda</p>
+            <p class="empty-subtitle">
+              Envie uma pergunta abaixo para consultar indicadores financeiros das 20 empresas da B3 cobertas pelo corpus da CVM.
+            </p>
+          </div>
+        } @else {
+          @for (message of store.messages(); track message.id) {
+            @if (message.role === 'user') {
+              <div class="chat__message chat__message--user message-bubble message-bubble--user">
+                {{ message.content || message.text }}
+              </div>
+            } @else {
+              @let parsed = parseAssistantMessage(message);
+              <div class="chat__message chat__message--assistant assistant-row">
+                <div aria-hidden="true" class="assistant-avatar">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M3 17l4-1 9-9a2 2 0 0 1 3 3l-9 9-1 4-3-3z"></path>
+                  </svg>
+                </div>
+
+                <div class="assistant-column">
+                  <div
+                    class="chat__bubble message-bubble message-bubble--assistant"
+                    [class.message-bubble--error]="message.isError"
+                  >
+                    <span class="chat__body">{{ parsed.body }}</span>
+                    @if (message.isStreaming) {
+                      <span class="cs-cursor" aria-hidden="true"></span>
+                    }
+                  </div>
+
+                  @if (parsed.citations.length > 0) {
+                    <ul class="chat__citations citations-list" aria-label="Fontes citadas">
+                      @for (citation of parsed.citations; track citation.url; let idx = $index) {
+                        <li class="chat__citation-item">
+                          <a
+                            class="chat__citation cs-cite cs-link"
+                            [href]="citation.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+                              <path d="M14 3v5h5"></path>
+                            </svg>
+                            <span class="chat__citation-label">[{{ idx + 1 }}] {{ citation.label }}</span>
+                            @if (citation.period) {
+                              <span class="chat__citation-period">{{ citation.period }}</span>
+                            }
+                            <span class="chat__citation-origin">({{ citation.origin }})</span>
+                          </a>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+            }
+          }
+        }
       </section>
 
-      <footer class="composer-footer">
-        <form class="composer-box" (submit)="$event.preventDefault()">
+      <footer class="chat__composer composer-footer">
+        <form class="composer-box" (submit)="submit($event)">
           <label for="msg" class="sr-only">Mensagem</label>
-          <input
+          <textarea
             id="msg"
-            type="text"
-            class="composer-input"
+            rows="1"
+            class="chat__input composer-input"
             placeholder="Pergunte sobre seus investimentos…"
-            autocomplete="off"
-          />
+            [value]="draft()"
+            (input)="onInput($event)"
+            (keydown)="onKeydown($event)"
+          ></textarea>
           <button
-            class="cs-send"
+            class="chat__send cs-send"
             type="submit"
             aria-label="Enviar mensagem"
+            [disabled]="isSendDisabled()"
           >
             <span class="sr-only">Enviar</span>
             <svg
@@ -90,5 +168,9 @@
         </form>
       </footer>
     </main>
+
+    <aside class="workspace-aside" aria-label="Painel do pipeline">
+      <app-graph-panel />
+    </aside>
   </div>
 </div>

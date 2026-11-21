@@ -1,51 +1,141 @@
 import { TestBed } from '@angular/core/testing';
-import { ChatComponent } from './chat';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ChatService, type ChatStreamEvent } from '../api/chat.service';
+import { ChatStore, WORD_REVEAL_INTERVAL_MS } from '../state/chat-store';
+import { Chat } from './chat';
 
-describe('ChatComponent (casca estática)', () => {
-  beforeEach(async () => {
+describe('Chat', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('renderiza o header com wordmark, faixa de disclaimer e botão .chat__send inicialmente desabilitado enquanto textarea estiver vazia', async () => {
     await TestBed.configureTestingModule({
-      imports: [ChatComponent],
+      imports: [Chat],
     }).compileComponents();
-  });
 
-  it('renderiza o header com o wordmark Investments e subtítulo Consultor de Investimentos', () => {
-    const fixture = TestBed.createComponent(ChatComponent);
+    const fixture = TestBed.createComponent(Chat);
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const header = compiled.querySelector('header.chat-header');
-    expect(header).toBeTruthy();
-    expect(header?.textContent).toContain('Investments');
-    expect(header?.textContent).toContain('Consultor de Investimentos');
-  });
+    expect(compiled.querySelector('header.chat-header')?.textContent).toContain('Investments');
+    expect(compiled.querySelector('.disclaimer-banner')?.textContent).toMatch(/informativo/i);
 
-  it('renderiza a faixa permanente de disclaimer regulatório', () => {
-    const fixture = TestBed.createComponent(ChatComponent);
-    fixture.detectChanges();
+    const textarea = compiled.querySelector('textarea#msg') as HTMLTextAreaElement | null;
+    expect(textarea).toBeTruthy();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    const disclaimer = compiled.querySelector('.disclaimer-banner');
-    expect(disclaimer).toBeTruthy();
-    expect(disclaimer?.textContent).toMatch(/informativo/i);
-    expect(disclaimer?.textContent).toMatch(/não realiza recomendações/i);
-  });
-
-  it('renderiza a área de mensagens vazia e o composer com input e botão Enviar', () => {
-    const fixture = TestBed.createComponent(ChatComponent);
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    const messagesArea = compiled.querySelector('.messages-area');
-    expect(messagesArea).toBeTruthy();
-    expect(messagesArea?.querySelector('.messages-empty')).toBeTruthy();
-
-    const input = compiled.querySelector('input#msg') as HTMLInputElement | null;
-    expect(input).toBeTruthy();
-    expect(input?.placeholder).toContain('Pergunte sobre seus investimentos');
-
-    const sendButton = compiled.querySelector('button.cs-send') as HTMLButtonElement | null;
+    const sendButton = compiled.querySelector('button.chat__send') as HTMLButtonElement | null;
     expect(sendButton).toBeTruthy();
-    expect(sendButton?.getAttribute('aria-label')).toBe('Enviar mensagem');
-    expect(sendButton?.textContent).toContain('Enviar');
+    expect(sendButton?.disabled).toBe(true);
+  });
+
+  it('envia a pergunta com Enter (sem Shift), desabilita o botão enquanto a resposta está em andamento e permite quebra de linha com Shift+Enter', async () => {
+    const fakeChatService: Pick<ChatService, 'ask'> = {
+      async *ask(): AsyncGenerator<ChatStreamEvent, void, unknown> {
+        yield {
+          node: 'answer',
+          answer: 'Lucro cresceu',
+        };
+      },
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [Chat],
+      providers: [{ provide: ChatService, useValue: fakeChatService }],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(Chat);
+    const store = TestBed.inject(ChatStore);
+    const sendSpy = vi.spyOn(store, 'send');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const textarea = compiled.querySelector('textarea') as HTMLTextAreaElement;
+    const sendButton = compiled.querySelector('button.chat__send') as HTMLButtonElement;
+
+    // Digita texto na textarea
+    textarea.value = 'Qual o lucro da Vale?';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(sendButton.disabled).toBe(false);
+
+    // Shift+Enter NÃO envia
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, cancelable: true }),
+    );
+    fixture.detectChanges();
+    expect(sendSpy).not.toHaveBeenCalled();
+
+    // Enter sem Shift envia e limpa a textarea
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', shiftKey: false, cancelable: true }),
+    );
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(sendSpy).toHaveBeenCalledWith('Qual o lucro da Vale?');
+    expect(textarea.value).toBe('');
+    // Enquanto o streaming palavra por palavra não terminou, mesmo digitando novo texto o botão continua desabilitado
+    textarea.value = 'Nova pergunta';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(sendButton.disabled).toBe(true);
+
+    // Conclui os 2 ticks de 70ms ("Lucro", "cresceu")
+    await vi.advanceTimersByTimeAsync(WORD_REVEAL_INTERVAL_MS * 2);
+    fixture.detectChanges();
+    expect(sendButton.disabled).toBe(false);
+  });
+
+  it('renderiza store.messages() em .chat__messages separando o corpo e a lista de citações (link + data-base) via parseAnswer', async () => {
+    const fakeChatService: Pick<ChatService, 'ask'> = {
+      async *ask(): AsyncGenerator<ChatStreamEvent, void, unknown> {
+        yield {
+          node: 'answer',
+          answer: [
+            'A Vale lucrou R$ 14 bi.',
+            '',
+            'Fontes:',
+            '- VALE3 · 3T25 (data-base 2025-09-30) — https://dados.cvm.gov.br/itr/vale3',
+          ].join('\n'),
+        };
+      },
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [Chat],
+      providers: [{ provide: ChatService, useValue: fakeChatService }],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(Chat);
+    const store = TestBed.inject(ChatStore);
+    fixture.detectChanges();
+
+    await store.send('Qual o lucro da Vale no 3T25?');
+    // Avança o timer para revelar todas as palavras da resposta
+    vi.advanceTimersByTime(WORD_REVEAL_INTERVAL_MS * 20);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const messagesContainer = compiled.querySelector('.chat__messages');
+    expect(messagesContainer).toBeTruthy();
+
+    const userBubble = messagesContainer?.querySelector('.chat__message--user');
+    expect(userBubble?.textContent).toContain('Qual o lucro da Vale no 3T25?');
+
+    const assistantMsg = messagesContainer?.querySelector('.chat__message--assistant');
+    expect(assistantMsg?.querySelector('.chat__body')?.textContent).toBe('A Vale lucrou R$ 14 bi.');
+
+    const citationLink = assistantMsg?.querySelector('a.chat__citation') as HTMLAnchorElement | null;
+    expect(citationLink).toBeTruthy();
+    expect(citationLink?.href).toContain('https://dados.cvm.gov.br/itr/vale3');
+    expect(citationLink?.textContent).toContain('3T25 (data-base 2025-09-30)');
+    expect(citationLink?.textContent).toContain('Base local (CVM)');
   });
 });
