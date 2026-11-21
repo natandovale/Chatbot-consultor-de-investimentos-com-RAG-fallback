@@ -11,7 +11,7 @@ function argumentoUrl(): string {
   const index = process.argv.indexOf('--url');
   const url = index !== -1 ? process.argv[index + 1] : undefined;
   if (!url) {
-    console.error('Uso: pnpm capstone:check --url https://meu-projeto.run.app');
+    console.error('Uso: pnpm capstone:check --url https://ai-researcher-capstone-study.web.app/');
     process.exit(1);
   }
   return url;

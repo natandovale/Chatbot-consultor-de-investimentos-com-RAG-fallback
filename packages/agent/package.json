@@ -1,0 +1,24 @@
+{
+  "name": "@hero/agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "seed": "tsx src/seed/run.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.12.0",
+    "google-auth-library": "^9.15.1",
+    "drizzle-orm": "^0.38.4",
+    "pg": "8.22.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/pg": "8.21.0",
+    "drizzle-kit": "^0.30.5",
+    "typescript": "5.9.3"
+  }
+}
