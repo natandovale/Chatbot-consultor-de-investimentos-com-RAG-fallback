@@ -1,9 +1,10 @@
 import { Component, inject, resource } from '@angular/core';
 import { HealthService } from './api/health.service';
+import { ChatComponent } from './chat/chat';
 
 @Component({
   selector: 'app-root',
-  imports: [],
+  imports: [ChatComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

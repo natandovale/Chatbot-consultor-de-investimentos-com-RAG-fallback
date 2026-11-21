@@ -1,0 +1,94 @@
+<div class="chat-shell">
+  <header class="chat-header">
+    <div class="brand-group">
+      <svg
+        aria-hidden="true"
+        width="28"
+        height="28"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="brand-icon"
+      >
+        <path d="M3 17l4-1 9-9a2 2 0 0 1 3 3l-9 9-1 4-3-3z"></path>
+        <path d="M2 21c4 0 7-1 9-3"></path>
+      </svg>
+      <span class="brand-wordmark">Investments</span>
+      <span class="brand-subtitle">Consultor de Investimentos</span>
+    </div>
+    <span class="header-session-label">Nova conversa</span>
+  </header>
+
+  <div class="disclaimer-banner" role="note" aria-label="Aviso regulatório">
+    <svg
+      aria-hidden="true"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="disclaimer-icon"
+    >
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <p class="disclaimer-text">
+      Ambiente exclusivamente informativo com base em demonstrações financeiras públicas da CVM (ITR/DFP).
+      Este sistema não realiza recomendações de compra, venda ou manutenção de investimentos.
+    </p>
+  </div>
+
+  <div class="workspace-grid">
+    <main class="chat-card" aria-label="Conversa com o consultor">
+      <section class="messages-area" aria-label="Área de mensagens">
+        <div class="messages-empty">
+          <p class="empty-title">Nenhuma mensagem ainda</p>
+          <p class="empty-subtitle">
+            Envie uma pergunta abaixo para consultar indicadores financeiros das 20 empresas da B3 cobertas pelo corpus da CVM.
+          </p>
+        </div>
+      </section>
+
+      <footer class="composer-footer">
+        <form class="composer-box" (submit)="$event.preventDefault()">
+          <label for="msg" class="sr-only">Mensagem</label>
+          <input
+            id="msg"
+            type="text"
+            class="composer-input"
+            placeholder="Pergunte sobre seus investimentos…"
+            autocomplete="off"
+          />
+          <button
+            class="cs-send"
+            type="submit"
+            aria-label="Enviar mensagem"
+          >
+            <span class="sr-only">Enviar</span>
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 12h14"></path>
+              <path d="M13 6l6 6-6 6"></path>
+            </svg>
+          </button>
+        </form>
+      </footer>
+    </main>
+  </div>
+</div>

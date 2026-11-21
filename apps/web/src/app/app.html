@@ -1,11 +1,11 @@
-<main>
-  <h1>AI Researcher</h1>
+<app-chat />
 
+<div class="health-status-bar" aria-live="polite">
   @if (health.isLoading()) {
-  <p>Consultando /api/health...</p>
+    <span>Consultando /api/health...</span>
   } @else if (health.error()) {
-  <p>Não foi possível consultar /api/health.</p>
+    <span>Não foi possível consultar /api/health.</span>
   } @else if (health.value(); as value) {
-  <p>status: {{ value.status }} · database: {{ value.database }}</p>
+    <span>status: {{ value.status }} · database: {{ value.database }}</span>
   }
-</main>
+</div>
