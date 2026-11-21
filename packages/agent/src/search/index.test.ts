@@ -42,6 +42,7 @@ describe('SearchProviders', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ q: 'lucro vale 3t25' }),
+        signal: expect.any(Object),
       });
 
       expect(results).toEqual([
@@ -69,6 +70,26 @@ describe('SearchProviders', () => {
 
       const provider = makeSerperProvider('chave-invalida');
       await expect(provider.search('teste')).rejects.toThrow('Falha na busca do Serper (401)');
+    });
+
+    it('deve abortar e lançar erro claro de timeout de 10s quando a requisição travar', async () => {
+      const mockFetch = vi.fn().mockImplementation((_url, options) => {
+        return new Promise((_resolve, reject) => {
+          if (options?.signal) {
+            options.signal.addEventListener('abort', () => {
+              const err = new Error('The operation was aborted');
+              err.name = 'AbortError';
+              reject(err);
+            });
+          }
+        });
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      // Timeout curto (10ms) para o teste unitário não esperar 10s reais
+      const provider = makeSerperProvider('fake-key', 10);
+      await expect(provider.search('teste timeout')).rejects.toThrow(/Timeout de 0.01s excedido/);
     });
   });
 
@@ -124,16 +145,40 @@ describe('SearchProviders', () => {
         'Falha na busca do Google Custom Search (403)',
       );
     });
+
+    it('deve abortar e lançar erro claro de timeout quando a requisição do Google travar', async () => {
+      const mockFetch = vi.fn().mockImplementation((_url, options) => {
+        return new Promise((_resolve, reject) => {
+          if (options?.signal) {
+            options.signal.addEventListener('abort', () => {
+              const err = new Error('The operation was aborted');
+              err.name = 'AbortError';
+              reject(err);
+            });
+          }
+        });
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const provider = makeGoogleCustomSearchProvider('key', 'cx', 10);
+      await expect(provider.search('teste timeout google')).rejects.toThrow(
+        /Timeout de 0.01s excedido na busca do Google Custom Search/,
+      );
+    });
   });
 
   describe('criarSearchProvider (fábrica)', () => {
-    it('deve usar o provedor "serper" por padrão e validar a chave', () => {
+    it('deve usar o provedor "serper" por padrão com camada de resiliência aplicada', () => {
       const provider = criarSearchProvider({
         SERPER_API_KEY: 'minha-chave-serper',
       });
 
       expect(provider).toBeDefined();
       expect(typeof provider.search).toBe('function');
+      // Provedores reais são envolvidos com comResiliencia (possuem getCircuitState)
+      expect(typeof (provider as any).getCircuitState).toBe('function');
+      expect((provider as any).getCircuitState()).toBe('CLOSED');
     });
 
     it('deve lançar erro claro se a chave do Serper não for fornecida', () => {
