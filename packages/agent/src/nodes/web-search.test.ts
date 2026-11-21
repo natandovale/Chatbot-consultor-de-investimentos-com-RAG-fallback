@@ -162,5 +162,67 @@ describe('web-search node', () => {
       expect(insertedDocs.length).toBe(1);
       expect(insertedDocs[0].sourceUrl).toBe('https://sucesso.com/200');
     });
+
+    it('deve capturar erro em searchProvider.search por query e continuar sem derrubar o nó (Serper fora do ar ou circuit breaker aberto)', async () => {
+      let chamadaSearch = 0;
+      const searchMock = vi.fn().mockImplementation(async (q: string) => {
+        chamadaSearch++;
+        if (q.includes('falha')) {
+          throw new Error('CircuitBreakerOpenError: Serper indisponível (circuito aberto)');
+        }
+        return [
+          { title: 'Notícia Recuperada', url: 'https://noticia-boa.com', snippet: 'resumo' },
+        ];
+      });
+
+      const searchProvider: SearchProvider = { search: searchMock };
+
+      const fetchHtmlMock = vi.fn().mockResolvedValue('<p>Conteúdo relevante da busca que funcionou</p>');
+      const insertedDocs: WebDocumentToInsert[] = [];
+
+      const webSearch = createWebSearchNode({
+        searchProvider,
+        embeddingClient: {
+          generateEmbeddings: vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+        },
+        insertWebDocuments: async (docs) => {
+          insertedDocs.push(...docs);
+        },
+        fetchHtml: fetchHtmlMock,
+      });
+
+      // Duas queries: a primeira falha no searchProvider, a segunda sucede
+      const result = await webSearch({
+        question: 'Empresa XPTO',
+        missingAspects: ['falha externa', 'sucesso'],
+      });
+
+      expect(searchMock).toHaveBeenCalledTimes(2);
+      expect(result.webSearchCompleted).toBe(true);
+      expect(result.webSearchResultsCount).toBe(1);
+      expect(insertedDocs.length).toBe(1);
+      expect(insertedDocs[0].query).toBe('Empresa XPTO sucesso');
+    });
+
+    it('deve finalizar sem adicionar nenhum documento quando todas as buscas do searchProvider falharem', async () => {
+      const searchMock = vi.fn().mockRejectedValue(new Error('Serper 503 Service Unavailable'));
+      const searchProvider: SearchProvider = { search: searchMock };
+
+      const insertWebDocuments = vi.fn();
+      const webSearch = createWebSearchNode({
+        searchProvider,
+        embeddingClient: { generateEmbeddings: vi.fn() },
+        insertWebDocuments,
+      });
+
+      const result = await webSearch({
+        question: 'Qualquer pergunta',
+        missingAspects: ['aspecto 1', 'aspecto 2'],
+      });
+
+      expect(result.webSearchCompleted).toBe(true);
+      expect(result.webSearchResultsCount).toBe(0);
+      expect(insertWebDocuments).not.toHaveBeenCalled();
+    });
   });
 });

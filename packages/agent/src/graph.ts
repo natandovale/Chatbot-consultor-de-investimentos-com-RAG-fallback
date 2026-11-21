@@ -5,6 +5,11 @@ import {
   createWebSearchNode,
   type InsertWebDocumentsFn,
 } from './nodes/web-search.js';
+import {
+  createAnswerNode,
+  type AnswerGenerateFn,
+  type AnswerLlmClient,
+} from './nodes/answer.js';
 import type { EmbeddingClient } from './seed/embeddings.js';
 import type { DocumentoSimilar, SearchSimilarFn } from './db/retrieve-similar.js';
 import type { SearchProvider } from './search/types.js';
@@ -37,7 +42,9 @@ export const GraphState = Annotation.Root({
   }),
 });
 
-export type GraphStateType = typeof GraphState.State;
+export type GraphStateType = typeof GraphState.State & {
+  answer?: string;
+};
 
 /**
  * Dependências injetadas para construção do grafo.
@@ -49,6 +56,7 @@ export interface GraphDeps {
   searchSimilar: SearchSimilarFn;
   searchProvider: SearchProvider;
   llmClient: GradeLlmClient | GradeClassifierFn;
+  answerLlmClient?: AnswerLlmClient | AnswerGenerateFn;
   insertWebDocuments?: InsertWebDocumentsFn;
   fetchHtml?: (url: string) => Promise<string>;
   defaultLimit?: number;
@@ -58,8 +66,8 @@ export interface GraphDeps {
 /**
  * Monta e compila o grafo de execução do agente Corrective RAG:
  * START -> retrieve -> grade -> (condicional)
- *   - se sufficient = true => END
- *   - se iterations >= MAX_ITERATIONS (2) => END
+ *   - se sufficient = true => answer -> END
+ *   - se iterations >= MAX_ITERATIONS (2) => answer -> END
  *   - caso contrário => webSearch -> retrieve
  *
  * @param deps Dependências injetadas do grafo
@@ -92,23 +100,45 @@ export function createAgentGraph(deps: GraphDeps) {
     ttlDays: deps.ttlDays,
   });
 
-  // 4. Montagem do fluxo do StateGraph
+  // 4. Nó answer
+  const answerNode = createAnswerNode(
+    deps.answerLlmClient ??
+      (async () => 'Resposta analítica com base nos documentos disponíveis.'),
+  );
+
+  // 5. Montagem do fluxo do StateGraph
   const workflow = new StateGraph(GraphState)
     .addNode('retrieve', retrieveNode)
     .addNode('grade', gradeNode)
     .addNode('webSearch', webSearchNode)
+    .addNode('answer', answerNode)
     .addEdge(START, 'retrieve')
     .addEdge('retrieve', 'grade')
     .addConditionalEdges('grade', (state: GraphStateType) => {
       if (state.sufficient) {
-        return END;
+        return 'answer';
       }
       if (state.iterations >= MAX_ITERATIONS) {
-        return END;
+        return 'answer';
       }
       return 'webSearch';
     })
-    .addEdge('webSearch', 'retrieve');
+    .addEdge('webSearch', 'retrieve')
+    .addEdge('answer', END);
+
+  // Registra o canal answer após a declaração do nó para permitir que a saída do nó
+  // `answer` ({ answer: string }) seja propagada no stream e no invoke sem colidir com a validação interna de addNode.
+  const answerChannel = Annotation<string>({
+    reducer: (_prev, update) => update ?? _prev,
+    default: () => '',
+  });
+  (workflow.channels as Record<string, any>)['answer'] = answerChannel;
+  const workflowAny = workflow as any;
+  if (workflowAny._schemaDefinitions && workflowAny._outputDefinition) {
+    const schemaDef = workflowAny._schemaDefinitions.get(workflowAny._outputDefinition) ?? {};
+    workflowAny._outputDefinition = { ...schemaDef, answer: answerChannel };
+    workflowAny._schemaDefinitions.set(workflowAny._outputDefinition, workflowAny._outputDefinition);
+  }
 
   return workflow.compile();
 }
