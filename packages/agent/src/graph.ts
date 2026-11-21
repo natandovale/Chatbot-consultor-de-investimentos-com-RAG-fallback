@@ -9,7 +9,7 @@ import type { EmbeddingClient } from './seed/embeddings.js';
 import type { DocumentoSimilar, SearchSimilarFn } from './db/retrieve-similar.js';
 import type { SearchProvider } from './search/types.js';
 
-export const MAX_ITERATIONS = 3;
+export const MAX_ITERATIONS = 2;
 
 /**
  * Estado do Grafo do Agente definido via LangGraph Annotations.
@@ -100,7 +100,6 @@ export function createAgentGraph(deps: GraphDeps) {
     .addEdge(START, 'retrieve')
     .addEdge('retrieve', 'grade')
     .addConditionalEdges('grade', (state: GraphStateType) => {
-      console.log('[DEBUG conditional edge] iterations:', state.iterations, 'sufficient:', state.sufficient);
       if (state.sufficient) {
         return END;
       }
