@@ -100,15 +100,13 @@ export function createAgentGraph(deps: GraphDeps) {
     .addEdge(START, 'retrieve')
     .addEdge('retrieve', 'grade')
     .addConditionalEdges('grade', (state: GraphStateType) => {
-      // Se o contexto for suficiente, encerra
+      console.log('[DEBUG conditional edge] iterations:', state.iterations, 'sufficient:', state.sufficient);
       if (state.sufficient) {
         return END;
       }
-      // Se atingiu o limite de iterações (guardrail contra loop infinito), encerra
       if (state.iterations >= MAX_ITERATIONS) {
         return END;
       }
-      // Caso contrário, busca na web para enriquecer o banco
       return 'webSearch';
     })
     .addEdge('webSearch', 'retrieve');
