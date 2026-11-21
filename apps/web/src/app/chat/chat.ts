@@ -7,4 +7,6 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   styleUrl: './chat.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChatComponent {}
+export class Chat {}
+
+export { Chat as ChatComponent };

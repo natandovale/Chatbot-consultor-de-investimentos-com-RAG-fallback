@@ -1,15 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
+import { routes } from './app.routes';
+import { Chat } from './chat/chat';
+import { Health } from './health/health';
 
-describe('App', () => {
+describe('App e Roteamento', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
@@ -19,19 +28,27 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     expect(fixture.componentInstance).toBeTruthy();
-    httpMock.expectOne('/api/health').flush({ status: 'ok', database: 'ok' });
   });
 
-  it('renderiza o status vindo de /api/health, sem tocar rede de verdade', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
+  it('roteia "" para o componente Chat', async () => {
+    const harness = await RouterTestingHarness.create();
+    const instance = await harness.navigateByUrl('/', Chat);
+
+    expect(instance).toBeInstanceOf(Chat);
+    expect(harness.routeNativeElement?.textContent).toContain('Consultor de Investimentos');
+  });
+
+  it('roteia "health" para o componente Health e exibe o status de /api/health', async () => {
+    const harness = await RouterTestingHarness.create();
+    const instance = await harness.navigateByUrl('/health', Health);
+
+    expect(instance).toBeInstanceOf(Health);
 
     httpMock.expectOne('/api/health').flush({ status: 'ok', database: 'ok' });
-    await fixture.whenStable();
-    fixture.detectChanges();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('status: ok');
-    expect(compiled.textContent).toContain('database: ok');
+    expect(harness.routeNativeElement?.textContent).toContain('status: ok');
+    expect(harness.routeNativeElement?.textContent).toContain('database: ok');
   });
 });
