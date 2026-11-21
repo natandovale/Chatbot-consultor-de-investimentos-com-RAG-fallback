@@ -1,7 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { chatRequestSchema } from '@hero/contracts';
 import {
-  type ChatEvent,
   type ErrorChatEvent,
   formatSseEvent,
   translateChunks,
@@ -23,23 +22,13 @@ export interface ChatRouteOptions {
 
 const chatRoute: FastifyPluginAsync<ChatRouteOptions> = async (app, { graph }) => {
   app.post('/chat', async (request, reply) => {
-    // 1. Valida o payload da requisição com o schema de @hero/contracts
-    const parseResult = chatRequestSchema.safeParse(request.body);
-    if (!parseResult.success) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: parseResult.error.issues?.[0]?.message ?? 'Dados inválidos na requisição',
-      });
-    }
+    // 1. Valida o payload da requisição com o schema de @hero/contracts.
+    // Erros de validação (ZodError) não são capturados aqui e sobem para o errorHandler central.
+    const { question } = chatRequestSchema.parse(request.body ?? {});
 
     if (!graph) {
-      return reply.status(503).send({
-        error: 'Service Unavailable',
-        message: 'Grafo do agente não está configurado na aplicação.',
-      });
+      throw new Error('Grafo do agente não está configurado na aplicação.');
     }
-
-    const { question } = parseResult.data;
 
     // 2. Configura os headers manualmente exigidos pelo Cloud Run para evitar bufferização de SSE
     reply.hijack();
@@ -58,7 +47,8 @@ const chatRoute: FastifyPluginAsync<ChatRouteOptions> = async (app, { graph }) =
         }
       }
     } catch (error: any) {
-      // 4. Se o grafo lançar erro durante o stream, escreve um evento SSE de erro e encerra sem derrubar o processo
+      // 4. Se o grafo lançar erro no meio do stream (após headers 200 SSE enviados),
+      // escreve um evento SSE de erro e encerra a conexão sem derrubar o processo
       const errorEvent: ErrorChatEvent = {
         node: 'error',
         error: error?.message || 'Erro inesperado durante a execução do grafo',

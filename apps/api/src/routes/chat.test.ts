@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { problemDetailsSchema } from '@hero/contracts';
 import { build } from '../app.js';
 import type { GraphLike } from './chat.js';
 
 describe('POST /api/chat', () => {
-  it('valida com schema de @hero/contracts e retorna 400 se question estiver ausente ou vazio', async () => {
+  it('delega ZodError ao error handler central e retorna 400 (RFC 7807) se question estiver ausente ou vazio', async () => {
     const app = build();
 
     const semCorpo = await app.inject({
@@ -12,7 +13,10 @@ describe('POST /api/chat', () => {
       payload: {},
     });
     expect(semCorpo.statusCode).toBe(400);
-    expect(semCorpo.json().message).toContain('Pergunta é obrigatória');
+    expect(semCorpo.headers['content-type']).toContain('application/problem+json');
+    const problemSemCorpo = problemDetailsSchema.parse(semCorpo.json());
+    expect(problemSemCorpo.status).toBe(400);
+    expect(problemSemCorpo.detail).toContain('Pergunta é obrigatória');
 
     const vazio = await app.inject({
       method: 'POST',
@@ -20,10 +24,13 @@ describe('POST /api/chat', () => {
       payload: { question: '   ' },
     });
     expect(vazio.statusCode).toBe(400);
-    expect(vazio.json().message).toContain('Pergunta é obrigatória');
+    expect(vazio.headers['content-type']).toContain('application/problem+json');
+    const problemVazio = problemDetailsSchema.parse(vazio.json());
+    expect(problemVazio.status).toBe(400);
+    expect(problemVazio.detail).toContain('Pergunta é obrigatória');
   });
 
-  it('retorna 503 se o grafo não estiver configurado', async () => {
+  it('delega erro ao error handler central (500 RFC 7807 sem vazar detalhe interno) se o grafo não estiver configurado', async () => {
     const app = build();
 
     const response = await app.inject({
@@ -32,8 +39,11 @@ describe('POST /api/chat', () => {
       payload: { question: 'Qual foi o lucro da Vale?' },
     });
 
-    expect(response.statusCode).toBe(503);
-    expect(response.json().message).toContain('Grafo do agente não está configurado');
+    expect(response.statusCode).toBe(500);
+    expect(response.headers['content-type']).toContain('application/problem+json');
+    const problem = problemDetailsSchema.parse(response.json());
+    expect(problem.status).toBe(500);
+    expect(problem.title).toBe('Internal Server Error');
   });
 
   it('escreve headers manuais com Cache-Control: no-cache, no-transform e Connection: keep-alive', async () => {

@@ -1,11 +1,14 @@
 import type { SearchProvider, SearchResult } from './types.js';
 
-export class CircuitBreakerOpenError extends Error {
+export class CircuitoAbertoError extends Error {
   constructor(message = 'Circuito aberto para o provedor de busca. Chamada rejeitada imediatamente.') {
     super(message);
-    this.name = 'CircuitBreakerOpenError';
+    this.name = 'CircuitoAbertoError';
   }
 }
+
+export const CircuitBreakerOpenError = CircuitoAbertoError;
+export type CircuitBreakerOpenError = CircuitoAbertoError;
 
 export interface ResilienciaOptions {
   /**
