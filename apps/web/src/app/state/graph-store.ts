@@ -139,6 +139,25 @@ export class GraphStore {
     this.onEvent(event, now);
   }
 
+  /**
+   * Interrompe qualquer etapa ainda em execução (usado quando ocorre erro no stream)
+   * para evitar que o indicador de carregamento fique girando indefinidamente.
+   */
+  stop(now: number = Date.now()): void {
+    this._steps.update((current) =>
+      current.map((step) =>
+        step.status === 'running'
+          ? {
+              ...step,
+              status: 'completed',
+              durationMs:
+                typeof step.startedAt === 'number' ? Math.max(0, now - step.startedAt) : 0,
+            }
+          : step,
+      ),
+    );
+  }
+
   reset(): void {
     this._steps.set([]);
   }

@@ -13,7 +13,7 @@ import {
 import { salvarDocumentosWeb } from './db/web-documents.js';
 import { criarFetchHtml, criarSearchProvider } from './search/index.js';
 import type { SearchProvider } from './search/types.js';
-import { createVertexLlmClient } from './llm/vertex.js';
+import { createAnswerLlmClient, createGradeLlmClient } from './llm/vertex.js';
 import { criarAnswerLlmDemo, criarBuscarDemo, criarGradeLlmDemo } from './demo/graph-demo.js';
 import { withLangfuseCallbacks } from './telemetry/langfuse.js';
 import { criarMetricsCallback, MetricsCallbackHandler } from './telemetry/metrics.js';
@@ -236,14 +236,15 @@ export function createRealAgentGraph(
   };
   const searchProvider = criarSearchProvider(env);
   const fetchHtml = criarFetchHtml(env);
-  const vertexLlm = createVertexLlmClient();
+  const gradeLlm = createGradeLlmClient();
+  const answerLlm = createAnswerLlmClient();
 
   return createAgentGraph({
     embeddingClient,
     searchSimilar,
     searchProvider,
-    llmClient: vertexLlm,
-    answerLlmClient: vertexLlm,
+    llmClient: gradeLlm,
+    answerLlmClient: answerLlm,
     insertWebDocuments,
     fetchHtml,
   });

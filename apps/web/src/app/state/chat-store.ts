@@ -109,6 +109,7 @@ export class ChatStore implements OnDestroy {
       }
     } catch {
       this.clearTimer();
+      this.graphStore.stop();
       this._error.set(FIXED_ERROR_MESSAGE);
       this._isStreaming.set(false);
       this._messages.update((current) =>

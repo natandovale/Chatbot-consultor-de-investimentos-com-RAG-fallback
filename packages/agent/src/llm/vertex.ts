@@ -30,9 +30,13 @@ export function createVertexLlmClient(options: VertexLlmOptions = {}): VertexLlm
     process.env.GCP_PROJECT_ID ||
     process.env.GOOGLE_CLOUD_PROJECT ||
     'ai-researcher-capstone-study';
-  const location = options.location || process.env.GCP_REGION || 'us-central1';
+  const location =
+    options.location || process.env.VERTEX_LOCATION || process.env.GCP_VERTEX_LOCATION || 'global';
   const modelName =
-    options.model || process.env.GEMINI_MODEL || process.env.VERTEX_MODEL || 'gemini-2.0-flash';
+    options.model ||
+    process.env.GEMINI_MODEL ||
+    process.env.VERTEX_MODEL ||
+    'gemini-3-flash-preview';
 
   let vertexInstance: VertexAI | null = null;
   function getVertex(): VertexAI {
@@ -40,6 +44,7 @@ export function createVertexLlmClient(options: VertexLlmOptions = {}): VertexLlm
       vertexInstance = new VertexAI({
         project: projectId,
         location,
+        ...(location === 'global' ? { apiEndpoint: 'aiplatform.googleapis.com' } : {}),
       });
     }
     return vertexInstance;
@@ -89,10 +94,24 @@ export function createVertexLlmClient(options: VertexLlmOptions = {}): VertexLlm
   };
 }
 
-export function createGradeLlmClient(options?: VertexLlmOptions): GradeLlmClient {
-  return createVertexLlmClient(options);
+export function createGradeLlmClient(options: VertexLlmOptions = {}): GradeLlmClient {
+  return createVertexLlmClient({
+    ...options,
+    model:
+      options.model ||
+      process.env.MODEL_GRADE ||
+      process.env.GEMINI_MODEL ||
+      'gemini-3.1-flash-lite',
+  });
 }
 
-export function createAnswerLlmClient(options?: VertexLlmOptions): AnswerLlmClient {
-  return createVertexLlmClient(options);
+export function createAnswerLlmClient(options: VertexLlmOptions = {}): AnswerLlmClient {
+  return createVertexLlmClient({
+    ...options,
+    model:
+      options.model ||
+      process.env.MODEL_ANSWER ||
+      process.env.GEMINI_MODEL ||
+      'gemini-3-flash-preview',
+  });
 }

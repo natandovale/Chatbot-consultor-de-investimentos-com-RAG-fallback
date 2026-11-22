@@ -19,6 +19,8 @@ export const MODEL_PRICING_USD_PER_MILLION: Readonly<Record<string, ModelPricing
   Object.freeze({
     'gemini-3.5-flash-lite': { input: 0.075, output: 0.3 },
     'gemini-3.6-flash': { input: 0.15, output: 0.6 },
+    'gemini-3.1-flash-lite': { input: 0.075, output: 0.3 },
+    'gemini-3-flash-preview': { input: 0.15, output: 0.6 },
     'gemini-2.5-flash-lite': { input: 0.075, output: 0.3 },
     'gemini-2.5-flash': { input: 0.15, output: 0.6 },
     'gemini-2.0-flash-lite': { input: 0.075, output: 0.3 },
