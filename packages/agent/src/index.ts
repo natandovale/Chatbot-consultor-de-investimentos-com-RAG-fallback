@@ -1,6 +1,7 @@
 export * from './search/index.js';
 export * from './graph.js';
 export * from './demo/graph-demo.js';
+export * from './telemetry/langfuse.js';
 export * from './llm/vertex.js';
 export * from './seed/embeddings.js';
 export { createRetrieveNode, type RetrieveNodeDependencies } from './nodes/retrieve.js';

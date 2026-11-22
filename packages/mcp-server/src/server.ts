@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getAgentGraph } from '@hero/agent';
+import { getAgentGraph, withLangfuseCallbacks } from '@hero/agent';
 
 export const PERGUNTAR_TOOL_NAME = 'perguntar';
 
@@ -17,7 +17,10 @@ export const GENERIC_TOOL_ERROR_MESSAGE =
   'Não foi possível processar a pergunta no momento. Tente novamente mais tarde.';
 
 export interface GraphLike {
-  invoke?(input: { question: string; [key: string]: unknown }): Promise<{
+  invoke?(
+    input: { question: string; [key: string]: unknown },
+    options?: unknown,
+  ): Promise<{
     answer?: string;
     [key: string]: unknown;
   }>;
@@ -35,7 +38,10 @@ export interface CreateMcpServerOptions {
 
 async function executarGrafo(graph: GraphLike, question: string): Promise<string> {
   if (typeof graph.invoke === 'function') {
-    const result = await graph.invoke({ question });
+    const invokeOptions = withLangfuseCallbacks(undefined);
+    const result = invokeOptions
+      ? await graph.invoke({ question }, invokeOptions)
+      : await graph.invoke({ question });
     if (typeof result === 'string') {
       return result;
     }
@@ -44,7 +50,10 @@ async function executarGrafo(graph: GraphLike, question: string): Promise<string
 
   if (typeof graph.stream === 'function') {
     let finalAnswer = '';
-    const stream = await graph.stream({ question }, { streamMode: 'updates' });
+    const stream = await graph.stream(
+      { question },
+      withLangfuseCallbacks({ streamMode: 'updates' }),
+    );
     for await (const chunk of stream) {
       if (chunk && typeof chunk === 'object' && 'answer' in chunk) {
         const answerData = chunk.answer as string | { answer?: string } | undefined;

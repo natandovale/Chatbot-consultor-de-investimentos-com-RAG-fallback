@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { createAgentGraph, type DocumentoSimilar } from '@hero/agent';
+import { CallbackHandler, createAgentGraph, type DocumentoSimilar } from '@hero/agent';
 import {
   createMcpServer,
   GENERIC_TOOL_ERROR_MESSAGE,
@@ -29,6 +29,9 @@ async function setupClientAndServer(getGraph: GetGraph) {
 }
 
 describe('@hero/mcp-server com InMemoryTransport', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
   it('expõe uma única tool (perguntar) com descrição clara do domínio (20 empresas da B3, CVM) e do guardrail (nunca recomenda) sem construir o grafo na inicialização', async () => {
     const getGraphSpy = vi.fn();
     const { client, close } = await setupClientAndServer(getGraphSpy);
@@ -205,6 +208,52 @@ describe('@hero/mcp-server com InMemoryTransport', () => {
       expect(content[0].text).not.toContain('10.128.0.4');
       expect(content[0].text).not.toContain('postgres_admin');
       expect(content[0].text).not.toContain('FATAL');
+    } finally {
+      await close();
+    }
+  });
+
+  it('passa um novo CallbackHandler (@langfuse/langchain) em graph.invoke() a cada chamada quando as chaves do Langfuse estão configuradas', async () => {
+    const invokeCalls: Array<{ input: unknown; options: unknown }> = [];
+    const fakeGraph: GetGraph = () => ({
+      async invoke(input, options) {
+        invokeCalls.push({ input, options });
+        return { answer: 'Resposta OK' };
+      },
+    });
+
+    const { client, close } = await setupClientAndServer(fakeGraph);
+
+    try {
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+
+      await client.callTool({
+        name: 'perguntar',
+        arguments: { pergunta: 'Sem Langfuse' },
+      });
+      expect(invokeCalls[0]?.options).toBeUndefined();
+
+      vi.stubEnv('LANGFUSE_PUBLIC_KEY', 'pk-lf-mcp');
+      vi.stubEnv('LANGFUSE_SECRET_KEY', 'sk-lf-mcp');
+
+      await client.callTool({
+        name: 'perguntar',
+        arguments: { pergunta: 'Com Langfuse 1' },
+      });
+      await client.callTool({
+        name: 'perguntar',
+        arguments: { pergunta: 'Com Langfuse 2' },
+      });
+
+      const opts1 = invokeCalls[1]?.options as { callbacks: unknown[] };
+      const opts2 = invokeCalls[2]?.options as { callbacks: unknown[] };
+
+      expect(opts1.callbacks).toHaveLength(1);
+      expect(opts1.callbacks[0]).toBeInstanceOf(CallbackHandler);
+      expect(opts2.callbacks).toHaveLength(1);
+      expect(opts2.callbacks[0]).toBeInstanceOf(CallbackHandler);
+      expect(opts1.callbacks[0]).not.toBe(opts2.callbacks[0]);
     } finally {
       await close();
     }

@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { getAgentGraph } from '@hero/agent';
+import { getAgentGraph, registerLangfuseTelemetry } from '@hero/agent';
 import { createMcpServer, type GetGraph } from './server.js';
 
 /**
@@ -9,6 +9,7 @@ import { createMcpServer, type GetGraph } from './server.js';
  * O grafo real só é construído na primeira chamada à tool `perguntar`, nunca na inicialização.
  */
 export async function startStdioServer(getGraph: GetGraph = getAgentGraph) {
+  registerLangfuseTelemetry();
   const server = createMcpServer(getGraph);
   const transport = new StdioServerTransport();
   await server.connect(transport);

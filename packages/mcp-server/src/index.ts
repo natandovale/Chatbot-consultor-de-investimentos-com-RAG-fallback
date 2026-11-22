@@ -4,6 +4,7 @@ import { startStdioServer } from './stdio.js';
 
 export * from './server.js';
 export * from './stdio.js';
+export * from './http.js';
 
 const isMain =
   Boolean(process.argv[1]) && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);

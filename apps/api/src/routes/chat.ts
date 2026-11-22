@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { withLangfuseCallbacks } from '@hero/agent';
 import { chatRequestSchema } from '@hero/contracts';
 import { type ErrorChatEvent, formatSseEvent, translateChunks } from './chat-event.js';
 
@@ -39,7 +40,10 @@ const chatRoute: FastifyPluginAsync<ChatRouteOptions> = async (app, { getGraph }
 
     // 3. Itera a execução do grafo transmitindo cada nó como Server-Sent Events
     try {
-      const stream = await graph.stream({ question }, { streamMode: 'updates' });
+      const stream = await graph.stream(
+        { question },
+        withLangfuseCallbacks({ streamMode: 'updates' }),
+      );
       for await (const chunk of stream) {
         const events = translateChunks(chunk);
         for (const event of events) {

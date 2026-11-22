@@ -1,9 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CallbackHandler } from '@hero/agent';
 import { problemDetailsSchema } from '@hero/contracts';
 import { build } from '../app.js';
 import type { GraphLike } from './chat.js';
 
 describe('POST /api/chat', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
   it('delega ZodError ao error handler central e retorna 400 (RFC 7807) sem chamar getChatGraph se question estiver ausente ou vazio', async () => {
     const getChatGraph = vi.fn();
     const app = build({ getChatGraph });
@@ -183,5 +187,53 @@ describe('POST /api/chat', () => {
     expect(payload).toContain('event: error');
     expect(payload).toContain('"node":"error"');
     expect(payload).toContain('Falha simulada na API do LLM/Banco durante o stream');
+  });
+
+  it('anexa um novo CallbackHandler (@langfuse/langchain) em graph.stream() a cada chamada quando as chaves do Langfuse estão configuradas e nada quando ausentes', async () => {
+    const receivedOptions: unknown[] = [];
+    const fakeGraph: GraphLike = {
+      async *stream(_input, options) {
+        receivedOptions.push(options);
+        yield { answer: { answer: 'ok' } };
+      },
+    };
+
+    const app = build({ getChatGraph: () => fakeGraph });
+
+    // Sem chaves configuradas -> sem callbacks
+    delete process.env.LANGFUSE_PUBLIC_KEY;
+    delete process.env.LANGFUSE_SECRET_KEY;
+    await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { question: 'Pergunta sem Langfuse' },
+    });
+    expect(receivedOptions[0]).toEqual({ streamMode: 'updates' });
+
+    // Com chaves configuradas -> um novo CallbackHandler a cada chamada
+    vi.stubEnv('LANGFUSE_PUBLIC_KEY', 'pk-lf-test');
+    vi.stubEnv('LANGFUSE_SECRET_KEY', 'sk-lf-test');
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { question: 'Pergunta 1 com Langfuse' },
+    });
+    await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { question: 'Pergunta 2 com Langfuse' },
+    });
+
+    const opts1 = receivedOptions[1] as { streamMode: string; callbacks: unknown[] };
+    const opts2 = receivedOptions[2] as { streamMode: string; callbacks: unknown[] };
+
+    expect(opts1.streamMode).toBe('updates');
+    expect(opts1.callbacks).toHaveLength(1);
+    expect(opts1.callbacks[0]).toBeInstanceOf(CallbackHandler);
+
+    expect(opts2.callbacks).toHaveLength(1);
+    expect(opts2.callbacks[0]).toBeInstanceOf(CallbackHandler);
+    expect(opts1.callbacks[0]).not.toBe(opts2.callbacks[0]);
   });
 });

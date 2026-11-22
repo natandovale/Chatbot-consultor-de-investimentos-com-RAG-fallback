@@ -11,7 +11,8 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "start": "node dist/stdio.js",
-    "stdio": "tsx src/stdio.ts"
+    "stdio": "tsx src/stdio.ts",
+    "http": "tsx src/http.ts"
   },
   "dependencies": {
     "@hero/agent": "workspace:*",

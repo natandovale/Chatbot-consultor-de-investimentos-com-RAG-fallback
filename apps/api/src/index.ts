@@ -1,5 +1,7 @@
-import { getRealGraph } from '@hero/agent';
+import { getRealGraph, registerLangfuseTelemetry } from '@hero/agent';
 import { build } from './app.js';
+
+registerLangfuseTelemetry();
 
 const app = build({
   getChatGraph: getRealGraph,
