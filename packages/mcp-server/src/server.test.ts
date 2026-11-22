@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { CallbackHandler, createAgentGraph, type DocumentoSimilar } from '@hero/agent';
+import {
+  CallbackHandler,
+  createAgentGraph,
+  MetricsCallbackHandler,
+  type DocumentoSimilar,
+} from '@hero/agent';
 import {
   createMcpServer,
   GENERIC_TOOL_ERROR_MESSAGE,
@@ -232,7 +237,9 @@ describe('@hero/mcp-server com InMemoryTransport', () => {
         name: 'perguntar',
         arguments: { pergunta: 'Sem Langfuse' },
       });
-      expect(invokeCalls[0]?.options).toBeUndefined();
+      const opts0 = invokeCalls[0]?.options as { callbacks: unknown[] };
+      expect(opts0.callbacks).toHaveLength(1);
+      expect(opts0.callbacks[0]).toBeInstanceOf(MetricsCallbackHandler);
 
       vi.stubEnv('LANGFUSE_PUBLIC_KEY', 'pk-lf-mcp');
       vi.stubEnv('LANGFUSE_SECRET_KEY', 'sk-lf-mcp');
@@ -249,10 +256,12 @@ describe('@hero/mcp-server com InMemoryTransport', () => {
       const opts1 = invokeCalls[1]?.options as { callbacks: unknown[] };
       const opts2 = invokeCalls[2]?.options as { callbacks: unknown[] };
 
-      expect(opts1.callbacks).toHaveLength(1);
+      expect(opts1.callbacks).toHaveLength(2);
       expect(opts1.callbacks[0]).toBeInstanceOf(CallbackHandler);
-      expect(opts2.callbacks).toHaveLength(1);
+      expect(opts1.callbacks[1]).toBeInstanceOf(MetricsCallbackHandler);
+      expect(opts2.callbacks).toHaveLength(2);
       expect(opts2.callbacks[0]).toBeInstanceOf(CallbackHandler);
+      expect(opts2.callbacks[1]).toBeInstanceOf(MetricsCallbackHandler);
       expect(opts1.callbacks[0]).not.toBe(opts2.callbacks[0]);
     } finally {
       await close();

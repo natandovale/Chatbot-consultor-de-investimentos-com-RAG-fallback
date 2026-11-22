@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CallbackHandler } from '@hero/agent';
+import {
+  CallbackHandler,
+  MetricsCallbackHandler,
+  recordDailyTokens,
+  resetMetrics,
+} from '@hero/agent';
 import { problemDetailsSchema } from '@hero/contracts';
 import { build } from '../app.js';
 import type { GraphLike } from './chat.js';
@@ -7,6 +12,7 @@ import type { GraphLike } from './chat.js';
 describe('POST /api/chat', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    resetMetrics();
   });
   it('delega ZodError ao error handler central e retorna 400 (RFC 7807) sem chamar getChatGraph se question estiver ausente ou vazio', async () => {
     const getChatGraph = vi.fn();
@@ -200,7 +206,7 @@ describe('POST /api/chat', () => {
 
     const app = build({ getChatGraph: () => fakeGraph });
 
-    // Sem chaves configuradas -> sem callbacks
+    // Sem chaves do Langfuse configuradas -> apenas MetricsCallbackHandler em callbacks
     delete process.env.LANGFUSE_PUBLIC_KEY;
     delete process.env.LANGFUSE_SECRET_KEY;
     await app.inject({
@@ -208,9 +214,12 @@ describe('POST /api/chat', () => {
       url: '/api/chat',
       payload: { question: 'Pergunta sem Langfuse' },
     });
-    expect(receivedOptions[0]).toEqual({ streamMode: 'updates' });
+    const opts0 = receivedOptions[0] as { streamMode: string; callbacks: unknown[] };
+    expect(opts0.streamMode).toBe('updates');
+    expect(opts0.callbacks).toHaveLength(1);
+    expect(opts0.callbacks[0]).toBeInstanceOf(MetricsCallbackHandler);
 
-    // Com chaves configuradas -> um novo CallbackHandler a cada chamada
+    // Com chaves configuradas -> CallbackHandler do Langfuse + MetricsCallbackHandler a cada chamada
     vi.stubEnv('LANGFUSE_PUBLIC_KEY', 'pk-lf-test');
     vi.stubEnv('LANGFUSE_SECRET_KEY', 'sk-lf-test');
 
@@ -229,11 +238,37 @@ describe('POST /api/chat', () => {
     const opts2 = receivedOptions[2] as { streamMode: string; callbacks: unknown[] };
 
     expect(opts1.streamMode).toBe('updates');
-    expect(opts1.callbacks).toHaveLength(1);
+    expect(opts1.callbacks).toHaveLength(2);
     expect(opts1.callbacks[0]).toBeInstanceOf(CallbackHandler);
+    expect(opts1.callbacks[1]).toBeInstanceOf(MetricsCallbackHandler);
 
-    expect(opts2.callbacks).toHaveLength(1);
+    expect(opts2.callbacks).toHaveLength(2);
     expect(opts2.callbacks[0]).toBeInstanceOf(CallbackHandler);
+    expect(opts2.callbacks[1]).toBeInstanceOf(MetricsCallbackHandler);
     expect(opts1.callbacks[0]).not.toBe(opts2.callbacks[0]);
+  });
+
+  it('verifica o budget diário de tokens no início de /chat antes de abrir o stream SSE e retorna 429 (RFC 7807) quando esgotado', async () => {
+    vi.stubEnv('DAILY_TOKEN_BUDGET', '500');
+    recordDailyTokens(500);
+
+    const getChatGraph = vi.fn();
+    const app = build({ getChatGraph });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { question: 'Qual a receita da Vale?' },
+    });
+
+    expect(response.statusCode).toBe(429);
+    expect(response.headers['content-type']).toContain('application/problem+json');
+    expect(response.headers['content-type']).not.toContain('text/event-stream');
+    expect(getChatGraph).not.toHaveBeenCalled();
+
+    const problem = problemDetailsSchema.parse(response.json());
+    expect(problem.status).toBe(429);
+    expect(problem.title).toBe('Too Many Requests');
+    expect(problem.detail).toContain('Orçamento diário de tokens excedido');
   });
 });

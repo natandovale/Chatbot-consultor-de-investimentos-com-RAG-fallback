@@ -79,6 +79,19 @@ export function createLangfuseCallbackHandler(
 
 export const criarCallbackHandlerLangfuse = createLangfuseCallbackHandler;
 
+/**
+ * Retorna um array contendo um novo `CallbackHandler` do Langfuse quando as chaves
+ * estão configuradas, ou um array vazio `[]` quando não estão configuradas.
+ * Permite compor diretamente no call site:
+ * `callbacks: [...criarLangfuseCallbacks(), criarMetricsCallback()]`
+ */
+export function criarLangfuseCallbacks(env: EnvRecord = process.env): CallbackHandler[] {
+  const handler = createLangfuseCallbackHandler(env);
+  return handler ? [handler] : [];
+}
+
+export const createLangfuseCallbacks = criarLangfuseCallbacks;
+
 function hasLangfuseCallback(callbacks: unknown[]): boolean {
   return callbacks.some(
     (cb) =>

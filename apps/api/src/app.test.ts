@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { CircuitoAbertoError } from '@hero/agent';
+import { CircuitoAbertoError, resetMetrics } from '@hero/agent';
 import { problemDetailsSchema } from '@hero/contracts';
 import { build } from './app.js';
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  resetMetrics();
+});
 
 describe('GET /api/health', () => {
   it('responde ok quando o banco está saudável', async () => {
@@ -86,5 +91,56 @@ describe('Central Error Handler (RFC 7807 - application/problem+json)', () => {
       status: 500,
       detail: 'Ocorreu um erro interno inesperado.',
     });
+  });
+});
+
+describe('Rate limiting global (@fastify/rate-limit)', () => {
+  it('lê RATE_LIMIT_MAX e RATE_LIMIT_WINDOW em runtime dentro de build(), bloqueia excesso com 429 (RFC 7807) e mantém /health e /metrics isentos', async () => {
+    vi.stubEnv('RATE_LIMIT_MAX', '2');
+    vi.stubEnv('RATE_LIMIT_WINDOW', '60000');
+
+    const app = build({
+      checkDatabase: async () => true,
+      getChatGraph: () => ({
+        async *stream() {
+          yield { answer: { answer: 'ok' } };
+        },
+      }),
+    });
+
+    // 1a e 2a chamadas a /api/chat passam
+    const chat1 = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { question: 'Pergunta 1' },
+    });
+    expect(chat1.statusCode).toBe(200);
+
+    const chat2 = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { question: 'Pergunta 2' },
+    });
+    expect(chat2.statusCode).toBe(200);
+
+    // 3a chamada a /api/chat excede RATE_LIMIT_MAX=2 -> 429 problem+json
+    const chat3 = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { question: 'Pergunta 3' },
+    });
+    expect(chat3.statusCode).toBe(429);
+    expect(chat3.headers['content-type']).toContain('application/problem+json');
+    const problem = problemDetailsSchema.parse(chat3.json());
+    expect(problem.status).toBe(429);
+
+    // /health, /api/health, /metrics e /api/metrics continuam respondendo 200 sem rate limit
+    for (let i = 0; i < 4; i++) {
+      const healthRes = await app.inject({ method: 'GET', url: '/api/health' });
+      expect(healthRes.statusCode).toBe(200);
+
+      const metricsRes = await app.inject({ method: 'GET', url: '/api/metrics' });
+      expect(metricsRes.statusCode).toBe(200);
+    }
   });
 });

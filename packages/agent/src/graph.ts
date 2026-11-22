@@ -16,6 +16,7 @@ import type { SearchProvider } from './search/types.js';
 import { createVertexLlmClient } from './llm/vertex.js';
 import { criarAnswerLlmDemo, criarBuscarDemo, criarGradeLlmDemo } from './demo/graph-demo.js';
 import { withLangfuseCallbacks } from './telemetry/langfuse.js';
+import { criarMetricsCallback, MetricsCallbackHandler } from './telemetry/metrics.js';
 
 export const MAX_ITERATIONS = 2;
 
@@ -151,12 +152,36 @@ export function createAgentGraph(deps: GraphDeps) {
 
   const compiled = workflow.compile();
 
+  function withGraphCallbacks(options?: Record<string, unknown>): Record<string, unknown> {
+    const withLangfuse = withLangfuseCallbacks(options) ?? {};
+    const existingCallbacks = Array.isArray(withLangfuse['callbacks'])
+      ? (withLangfuse['callbacks'] as unknown[])
+      : [];
+    const hasMetrics = existingCallbacks.some(
+      (cb) =>
+        cb instanceof MetricsCallbackHandler ||
+        (typeof cb === 'object' &&
+          cb !== null &&
+          'name' in cb &&
+          (cb as { name?: unknown }).name === 'PrometheusMetricsCallbackHandler'),
+    );
+
+    if (hasMetrics) {
+      return withLangfuse;
+    }
+
+    return {
+      ...withLangfuse,
+      callbacks: [...existingCallbacks, criarMetricsCallback()],
+    };
+  }
+
   const originalInvoke = compiled.invoke.bind(compiled);
   compiled.invoke = ((
     input: Parameters<typeof originalInvoke>[0],
     options?: Parameters<typeof originalInvoke>[1],
   ) => {
-    const nextOptions = withLangfuseCallbacks(
+    const nextOptions = withGraphCallbacks(
       options as Record<string, unknown> | undefined,
     ) as Parameters<typeof originalInvoke>[1];
     return originalInvoke(input, nextOptions);
@@ -167,7 +192,7 @@ export function createAgentGraph(deps: GraphDeps) {
     input: Parameters<typeof originalStream>[0],
     options?: Parameters<typeof originalStream>[1],
   ) => {
-    const nextOptions = withLangfuseCallbacks(
+    const nextOptions = withGraphCallbacks(
       options as Record<string, unknown> | undefined,
     ) as Parameters<typeof originalStream>[1];
     return originalStream(input, nextOptions);

@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getAgentGraph, withLangfuseCallbacks } from '@hero/agent';
+import { criarLangfuseCallbacks, criarMetricsCallback, getAgentGraph } from '@hero/agent';
 
 export const PERGUNTAR_TOOL_NAME = 'perguntar';
 
@@ -37,11 +37,10 @@ export interface CreateMcpServerOptions {
 }
 
 async function executarGrafo(graph: GraphLike, question: string): Promise<string> {
+  const callbacks = [...criarLangfuseCallbacks(), criarMetricsCallback()];
+
   if (typeof graph.invoke === 'function') {
-    const invokeOptions = withLangfuseCallbacks(undefined);
-    const result = invokeOptions
-      ? await graph.invoke({ question }, invokeOptions)
-      : await graph.invoke({ question });
+    const result = await graph.invoke({ question }, { callbacks });
     if (typeof result === 'string') {
       return result;
     }
@@ -52,7 +51,10 @@ async function executarGrafo(graph: GraphLike, question: string): Promise<string
     let finalAnswer = '';
     const stream = await graph.stream(
       { question },
-      withLangfuseCallbacks({ streamMode: 'updates' }),
+      {
+        streamMode: 'updates',
+        callbacks,
+      },
     );
     for await (const chunk of stream) {
       if (chunk && typeof chunk === 'object' && 'answer' in chunk) {
