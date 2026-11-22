@@ -8,8 +8,8 @@ import { documentos } from '../db/schema.js';
 import {
   createFakeEmbeddingClient,
   createRealEmbeddingClient,
-  getEmbeddingClient,
-  type EmbeddingClient,
+  criarEmbeddingsReal,
+  type EmbeddingClientLike as EmbeddingClient,
 } from './embeddings.js';
 
 // Schema zod para validação dos documentos do corpus
@@ -61,7 +61,11 @@ export async function runSeed(options: SeedOptions = {}) {
 
   console.log(`[seed] ${todosDocumentos.length} documentos validados com sucesso.`);
 
-  const embeddingClient = options.embeddingClient || getEmbeddingClient();
+  if (!options.embeddingClient && process.env.DEMO === 'true') {
+    throw new Error('O seed nunca deve rodar em modo DEMO (DEMO=true).');
+  }
+
+  const embeddingClient = options.embeddingClient || criarEmbeddingsReal();
   const { db, pool } = createDb(options.connectionString);
 
   const BATCH_SIZE = 10;
@@ -138,5 +142,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   });
 }
 
-// Exporta as funções para reutilização e testes futuros (modo DEMO)
-export { createRealEmbeddingClient, createFakeEmbeddingClient };
+// Exporta as funções para reutilização e testes futuros
+export { createRealEmbeddingClient, createFakeEmbeddingClient, criarEmbeddingsReal };

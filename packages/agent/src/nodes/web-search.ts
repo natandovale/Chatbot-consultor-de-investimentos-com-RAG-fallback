@@ -1,4 +1,4 @@
-import type { EmbeddingClient } from '../seed/embeddings.js';
+import type { EmbeddingClientLike as EmbeddingClient } from '../seed/embeddings.js';
 import type { SearchProvider } from '../search/types.js';
 
 export interface WebDocumentToInsert {

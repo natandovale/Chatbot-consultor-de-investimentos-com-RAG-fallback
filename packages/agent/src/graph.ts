@@ -3,7 +3,7 @@ import { createRetrieveNode } from './nodes/retrieve.js';
 import { createGradeNode, type GradeClassifierFn, type GradeLlmClient } from './nodes/grade.js';
 import { createWebSearchNode, type InsertWebDocumentsFn } from './nodes/web-search.js';
 import { createAnswerNode, type AnswerGenerateFn, type AnswerLlmClient } from './nodes/answer.js';
-import { createRealEmbeddingClient, type EmbeddingClient } from './seed/embeddings.js';
+import { criarEmbeddings, type EmbeddingClientLike as EmbeddingClient } from './seed/embeddings.js';
 import { createDb } from './db/index.js';
 import {
   createSearchSimilar,
@@ -14,6 +14,7 @@ import { salvarDocumentosWeb } from './db/web-documents.js';
 import { criarFetchHtml, criarSearchProvider } from './search/index.js';
 import type { SearchProvider } from './search/types.js';
 import { createVertexLlmClient } from './llm/vertex.js';
+import { criarAnswerLlmDemo, criarBuscarDemo, criarGradeLlmDemo } from './demo/graph-demo.js';
 
 export const MAX_ITERATIONS = 2;
 
@@ -156,18 +157,35 @@ export type GetGraph<TGraph = CompiledAgentGraph> = () => TGraph | Promise<TGrap
 let memoizedAgentGraph: CompiledAgentGraph | null = null;
 
 /**
- * Constrói uma nova instância do grafo real conectando Postgres (Drizzle + pgvector),
- * SearchProvider (Serper/Google ou Demo) e Vertex AI (embeddings, grade e answer).
+ * Constrói uma nova instância do grafo:
+ * - Quando `env.DEMO === 'true'`, monta o grafo inteiro com fixtures determinísticas
+ *   (`criarEmbeddings`, `criarBuscarDemo`, `criarGradeLlmDemo`, `criarAnswerLlmDemo`)
+ *   sem tocar em Postgres nem na Vertex AI.
+ * - Caso contrário, conecta Postgres (Drizzle + pgvector), SearchProvider e Vertex AI.
  */
-export function createRealAgentGraph(): CompiledAgentGraph {
+export function createRealAgentGraph(
+  env: Record<string, string | undefined> = process.env,
+): CompiledAgentGraph {
+  if (env.DEMO === 'true') {
+    return createAgentGraph({
+      embeddingClient: criarEmbeddings(env),
+      searchSimilar: criarBuscarDemo(),
+      searchProvider: criarSearchProvider(env),
+      llmClient: criarGradeLlmDemo(),
+      answerLlmClient: criarAnswerLlmDemo(),
+      insertWebDocuments: async () => {},
+      fetchHtml: criarFetchHtml(env),
+    });
+  }
+
   const { db } = createDb();
-  const embeddingClient = createRealEmbeddingClient();
+  const embeddingClient = criarEmbeddings(env);
   const searchSimilar = createSearchSimilar(db);
   const insertWebDocuments: InsertWebDocumentsFn = async (docs) => {
     await salvarDocumentosWeb(db, docs);
   };
-  const searchProvider = criarSearchProvider();
-  const fetchHtml = criarFetchHtml();
+  const searchProvider = criarSearchProvider(env);
+  const fetchHtml = criarFetchHtml(env);
   const vertexLlm = createVertexLlmClient();
 
   return createAgentGraph({

@@ -99,6 +99,8 @@
                   [href]="citation.url"
                   target="_blank"
                   rel="noopener noreferrer"
+                  [attr.aria-label]="'Abrir fonte: ' + citation.label"
+                  (click)="selectCitation(citation, idx + 1, $event)"
                 >
                   <svg
                     aria-hidden="true"
@@ -169,6 +171,50 @@
 
     <aside class="workspace-aside" aria-label="Painel do pipeline">
       <app-graph-panel />
+
+      @if (selectedCitation(); as selected) {
+      <section class="source-panel chat__source-panel" aria-label="Detalhe da fonte">
+        <div class="source-panel__header">
+          <h2 class="source-panel__title">Fonte [{{ selected.index }}]</h2>
+          <button
+            type="button"
+            class="source-panel__close"
+            aria-label="Fechar painel de fonte"
+            (click)="closeCitation()"
+          >
+            ✕
+          </button>
+        </div>
+
+        <dl class="source-panel__meta">
+          <div class="source-panel__row">
+            <dt class="source-panel__term">Data-base</dt>
+            <dd class="source-panel__value source-panel__period">
+              {{ selected.citation.period ?? selected.citation.label }}
+            </dd>
+          </div>
+          <div class="source-panel__row">
+            <dt class="source-panel__term">Origem</dt>
+            <dd class="source-panel__value source-panel__origin">
+              {{ selected.citation.origin }}
+            </dd>
+          </div>
+          <div class="source-panel__row">
+            <dt class="source-panel__term">Documento original</dt>
+            <dd class="source-panel__value">
+              <a
+                class="cs-link source-panel__link"
+                [href]="selected.citation.url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ selected.citation.url }}
+              </a>
+            </dd>
+          </div>
+        </dl>
+      </section>
+      }
     </aside>
   </div>
 </div>

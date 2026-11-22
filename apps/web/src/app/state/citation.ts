@@ -14,7 +14,7 @@ const FONTES_BLOCK_REGEX = /(?:^|\r?\n)\s*Fontes:\s*\r?\n([\s\S]*)$/i;
 const LINE_BULLET_REGEX = /^(?:[-*•]|\[\d+\]|\d+\.)\s*/;
 const LABEL_URL_SEPARATOR_REGEX = /^(.*?)\s*(?:[—–-]|:)\s*(https?:\/\/\S+)\s*$/;
 const LABEL_URL_FALLBACK_REGEX = /^(.*?)\s+(https?:\/\/\S+)\s*$/;
-const CVM_LABEL_REGEX = /^[A-Z]{4}\d{1,2}\s*(?:·|\s)\s*(.+?\(data-base:?\s*[^)]+\))$/i;
+const CVM_LABEL_REGEX = /^[A-Z]{4}\d{0,2}\s*(?:·|\s)\s*(.+?\(data-base:?\s*[^)]+\))$/i;
 
 function extractHostname(url: string): string {
   try {

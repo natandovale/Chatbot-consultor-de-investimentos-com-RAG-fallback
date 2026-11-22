@@ -1,5 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createAgentGraph, getAgentGraph, MAX_ITERATIONS, resetAgentGraph } from './graph.js';
+import {
+  createAgentGraph,
+  createRealAgentGraph,
+  getAgentGraph,
+  MAX_ITERATIONS,
+  resetAgentGraph,
+} from './graph.js';
+import {
+  criarAnswerLlmDemo,
+  criarBuscarDemo,
+  criarGradeLlmDemo,
+  DEMO_FIXED_ANSWER,
+  VALE_3T25_DEMO_DOCUMENT,
+} from './demo/graph-demo.js';
+import { criarEmbeddings, criarEmbeddingsReal } from './seed/embeddings.js';
+import { EMBEDDING_DIMENSIONS } from './db/schema.js';
 import type { DocumentoSimilar } from './db/retrieve-similar.js';
 import type { EmbeddingClient } from './seed/embeddings.js';
 import type { SearchProvider } from './search/types.js';
@@ -214,5 +229,67 @@ describe('createAgentGraph', () => {
     expect(factory).toHaveBeenCalledTimes(1);
     expect(g1).toBe(g2);
     resetAgentGraph();
+  });
+
+  describe('Modo DEMO=true no grafo inteiro', () => {
+    it('criarEmbeddings devolve vetor de zeros em DEMO=true e criarEmbeddingsReal isola embedDocuments em lote', async () => {
+      const demoEmbeddings = criarEmbeddings({ DEMO: 'true' });
+      const [vec] = await demoEmbeddings.generateEmbeddings(['Qual a receita da Vale?']);
+
+      expect(vec).toHaveLength(EMBEDDING_DIMENSIONS);
+      expect(vec.every((v) => v === 0)).toBe(true);
+
+      const queryVec = await demoEmbeddings('Qual a receita da Vale?');
+      expect(queryVec).toHaveLength(EMBEDDING_DIMENSIONS);
+      expect(queryVec.every((v) => v === 0)).toBe(true);
+
+      const realEmbeddings = criarEmbeddingsReal();
+      expect(typeof realEmbeddings.embedDocuments).toBe('function');
+    });
+
+    it('criarBuscarDemo devolve sempre o documento real da Vale 3T25 congelado do corpus', async () => {
+      const buscar = criarBuscarDemo();
+      const docs = await buscar([0, 0, 0]);
+
+      expect(docs).toHaveLength(1);
+      expect(docs[0]).toBe(VALE_3T25_DEMO_DOCUMENT);
+      expect(Object.isFrozen(docs[0])).toBe(true);
+      expect(docs[0].ticker).toBe('VALE');
+      expect(docs[0].period).toBe('3T25');
+      expect(docs[0].periodEnd).toBe('2025-09-30');
+      expect(docs[0].paragraph).toContain('R$ 56,7 bilhões');
+    });
+
+    it('criarGradeLlmDemo considera sempre suficiente e criarAnswerLlmDemo retorna resposta fixa', async () => {
+      const gradeDemo = criarGradeLlmDemo();
+      const gradeOut = await gradeDemo({ question: 'Qualquer', documents: [] });
+      expect(gradeOut).toEqual({ sufficient: true, missingAspects: [] });
+
+      const answerDemo = criarAnswerLlmDemo();
+      const answerOut = await answerDemo.generate({ system: '', prompt: '' });
+      expect(answerOut).toBe(DEMO_FIXED_ANSWER);
+    });
+
+    it('executa createRealAgentGraph({ DEMO: "true" }) ponta a ponta sem Postgres nem Vertex AI', async () => {
+      const demoGraph = createRealAgentGraph({ DEMO: 'true' });
+
+      const sequence: string[] = [];
+      for await (const chunk of await demoGraph.stream(
+        { question: 'Qual foi o resultado da Vale no 3T25?' },
+        { streamMode: 'updates' },
+      )) {
+        sequence.push(Object.keys(chunk)[0]);
+      }
+
+      expect(sequence).toEqual(['retrieve', 'grade', 'answer']);
+
+      const finalState = await demoGraph.invoke({
+        question: 'Qual foi o resultado da Vale no 3T25?',
+      });
+      expect(finalState.sufficient).toBe(true);
+      expect(finalState.documents).toEqual([VALE_3T25_DEMO_DOCUMENT]);
+      expect(finalState.answer).toContain(DEMO_FIXED_ANSWER);
+      expect(finalState.answer).toContain('VALE 3T25 (data-base: 2025-09-30)');
+    });
   });
 });

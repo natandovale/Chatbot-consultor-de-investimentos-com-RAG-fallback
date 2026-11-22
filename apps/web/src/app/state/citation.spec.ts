@@ -40,6 +40,26 @@ describe('parseAnswer', () => {
     ]);
   });
 
+  it('reconhece ticker de 4 letras sem dígito emitido pelo formatarFontes do corpus (ex.: VALE 3T25)', () => {
+    const answerText = [
+      'No 3T25, a Vale S.A. reportou receita líquida de R$ 56,7 bilhões.',
+      '',
+      'Fontes:',
+      '- VALE 3T25 (data-base: 2025-09-30) - https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/ITR/DADOS/itr_cia_aberta_2025.zip',
+    ].join('\n');
+
+    const result = parseAnswer(answerText);
+
+    expect(result.citations).toEqual([
+      {
+        label: 'VALE 3T25 (data-base: 2025-09-30)',
+        url: 'https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/ITR/DADOS/itr_cia_aberta_2025.zip',
+        period: '3T25 (data-base: 2025-09-30)',
+        origin: 'Base local (CVM)',
+      },
+    ]);
+  });
+
   it('usa o hostname da URL como origem quando o rótulo não tem o formato CVM', () => {
     const answerText = [
       'A queda do lucro foi explicada pela retração do minério de ferro na China.',

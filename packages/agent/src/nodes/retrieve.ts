@@ -1,4 +1,4 @@
-import type { EmbeddingClient } from '../seed/embeddings.js';
+import type { EmbeddingClientLike as EmbeddingClient } from '../seed/embeddings.js';
 import type { Documento, SearchSimilarFn } from '../db/retrieve-similar.js';
 
 export interface RetrieveNodeDependencies {

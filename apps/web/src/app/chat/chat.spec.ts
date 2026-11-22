@@ -139,5 +139,22 @@ describe('Chat', () => {
     expect(citationLink?.href).toContain('https://dados.cvm.gov.br/itr/vale3');
     expect(citationLink?.textContent).toContain('3T25 (data-base 2025-09-30)');
     expect(citationLink?.textContent).toContain('Base local (CVM)');
+
+    // Ao clicar na citação, abre o painel de detalhe da fonte com data-base, origem e link original
+    citationLink?.click();
+    fixture.detectChanges();
+
+    const sourcePanel = compiled.querySelector('.chat__source-panel');
+    expect(sourcePanel).toBeTruthy();
+    expect(sourcePanel?.querySelector('.source-panel__period')?.textContent).toContain(
+      '2025-09-30',
+    );
+    expect(sourcePanel?.querySelector('.source-panel__origin')?.textContent).toContain(
+      'Base local (CVM)',
+    );
+    const sourceLink = sourcePanel?.querySelector(
+      'a.source-panel__link',
+    ) as HTMLAnchorElement | null;
+    expect(sourceLink?.href).toContain('https://dados.cvm.gov.br/itr/vale3');
   });
 });

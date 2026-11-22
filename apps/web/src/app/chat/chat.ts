@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ChatStore, type ChatMessage } from '../state/chat-store';
-import { parseAnswer, type ParsedAnswer } from '../state/citation';
+import { parseAnswer, type Citation, type ParsedAnswer } from '../state/citation';
 import { GraphPanelComponent } from '../graph/graph-panel/graph-panel';
+
+export interface SelectedCitation {
+  citation: Citation;
+  index: number;
+}
 
 @Component({
   selector: 'app-chat',
@@ -13,6 +18,7 @@ import { GraphPanelComponent } from '../graph/graph-panel/graph-panel';
 export class Chat {
   protected readonly store = inject(ChatStore);
   protected readonly draft = signal('');
+  protected readonly selectedCitation = signal<SelectedCitation | null>(null);
 
   protected readonly isWaitingForResponse = computed(() => {
     if (this.store.isStreaming()) {
@@ -49,7 +55,17 @@ export class Chat {
 
     const question = this.draft().trim();
     this.draft.set('');
+    this.selectedCitation.set(null);
     void this.store.send(question);
+  }
+
+  protected selectCitation(citation: Citation, index: number, event?: Event): void {
+    event?.preventDefault();
+    this.selectedCitation.set({ citation, index });
+  }
+
+  protected closeCitation(): void {
+    this.selectedCitation.set(null);
   }
 
   protected parseAssistantMessage(message: ChatMessage): ParsedAnswer {
